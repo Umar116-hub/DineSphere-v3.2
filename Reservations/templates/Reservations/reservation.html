@@ -490,14 +490,14 @@
 <script>
     const restaurantName = "{{ restaurant.name|escapejs }}".replace(/ /g, "_");
     const isAuthenticated = "{{ request.user.is_authenticated|yesno:'true,false' }}" === "true";
-    const openingTime = "{{ restaurant.opening_hour|time:'H:i' }}";
-    const closingTime = "{{ restaurant.closing_hour|time:'H:i' }}";
+    const restaurant_opening_hour = "{{ restaurant.opening_hour|time:'H:i' }}";
+    const restaurant_closing_hour = "{{ restaurant.closing_hour|time:'H:i' }}";
 
     // Dynamic Time Slot Generation
     function generateTimeSlots() {
         const select = document.getElementById('startTimeBtn');
-        const [openH, openM] = openingTime.split(':').map(Number);
-        const [closeH, closeM] = closingTime.split(':').map(Number);
+        const [openH, openM] = restaurant_opening_hour.split(':').map(Number);
+        const [closeH, closeM] = restaurant_closing_hour.split(':').map(Number);
         
         if (isNaN(openH) || isNaN(closeH)) return;
 
