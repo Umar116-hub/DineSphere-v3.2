@@ -80,3 +80,5 @@ Thumbs.db
 # PyInstaller
 # =========================
 *.spec
+# Added by code-review-graph
+.code-review-graph/

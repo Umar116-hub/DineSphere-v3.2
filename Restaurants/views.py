@@ -18,7 +18,7 @@ from UsersHandling.services import (
 from .forms import TableForm, RestaurantForm, SpecialDayForm, ReviewForm
 from .models import Restaurant, Table, SpecialDay, Review, SeatingType
 import json
-# from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required
 from UsersHandling.models import RestaurantStaff
 from .services.logger import log_event
 from .services.parser import get_user_logs, format_logs_to_text
@@ -29,6 +29,7 @@ from .decorators import restrict_access
 
 
 
+@login_required
 def registration(request):
     if request.method == "POST":
         try:
@@ -56,7 +57,7 @@ def registration(request):
                     "details": f"Registered First restaurant {data['name']}",
                 }
             )
-            return redirect("")
+            return redirect("home")
 
         except Exception as e:
             messages.error(request, str(e))
@@ -138,68 +139,18 @@ def analytics(request, tab=None):
     from django.utils import timezone
     from datetime import timedelta
     
-    # Real booking statistics
+    # Get real analytics data
     if restaurant_id:
-        # Get all confirmed bookings for this restaurant
-        confirmed_bookings = Booking.objects.filter(
-            restaurant_id=restaurant_id,
-            status='confirmed'
-        )
+        analytics_data = getAnalytics(restaurant_id)
+        context = analytics_data
         
-        # Total bookings count
-        total_bookings = confirmed_bookings.count()
-        
-        # Total revenue
-        total_revenue = confirmed_bookings.aggregate(
-            total=Sum('total_price')
-        )['total'] or 0
-        
-        # This week's bookings
-        week_ago = timezone.now() - timedelta(days=7)
-        this_week_bookings = confirmed_bookings.filter(
-            created_at__gte=week_ago
-        ).count()
-        
-        # Last week's bookings for comparison
-        two_weeks_ago = timezone.now() - timedelta(days=14)
-        last_week_bookings = confirmed_bookings.filter(
-            created_at__gte=two_weeks_ago,
-            created_at__lt=week_ago
-        ).count()
-        
-        # Calculate growth percentage
-        if last_week_bookings > 0:
-            weekly_growth = ((this_week_bookings - last_week_bookings) / last_week_bookings) * 100
-        else:
-            weekly_growth = 0 if this_week_bookings == 0 else 100
-        
-        # Upcoming bookings (today and future)
-        today = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        upcoming_bookings = confirmed_bookings.filter(
-            booking_start_datetime__gte=today
-        ).count()
-        
-        # Average party size
-        avg_guests = confirmed_bookings.aggregate(
-            avg=Avg('guest_count')
-        )['avg'] or 0
-        
-        # Real staff count
-        staff_count = RestaurantStaff.objects.filter(
-            restaurant_id=restaurant_id
-        ).count()
-        
-        # Replace fake data with real data in context
-        context = {
-            'total_bookings': total_bookings,
-            'total_revenue': total_revenue,
-            'this_week_bookings': this_week_bookings,
-            'last_week_bookings': last_week_bookings,
-            'weekly_growth': round(weekly_growth, 1),
-            'upcoming_bookings': upcoming_bookings,
-            'avg_guests': round(avg_guests, 1),
-            'staff_count': staff_count,
-        }
+        # Add gender stats (demo data for now until models support it)
+        context.update({
+            'female_count': 124, # placeholders for now
+            'male_count': 156,
+            'female_percent': 44,
+            'male_percent': 56,
+        })
     else:
         context = {}
     
@@ -257,8 +208,10 @@ def tables(request):
 
 @restrict_access
 def holidays(request):
-    restaurant_id = request.session["selected_restaurant_id"] 
-    restaurant = Restaurant.objects.get(id=restaurant_id)
+    restaurant_id = request.session.get("selected_restaurant_id")
+    if not restaurant_id:
+        return redirect("/business/registration/")
+    restaurant = get_object_or_404(Restaurant, id=restaurant_id)
 
     if request.method == "GET":
         form = SpecialDayForm()
@@ -354,8 +307,11 @@ def business_info(request):
 
 @restrict_access
 def reservations(request):
-    restaurant = Restaurant.objects.get(id=request.session["selected_restaurant_id"])
-    all_reservations = Booking.objects.filter(restaurant=restaurant).all()
+    restaurant_id = request.session.get("selected_restaurant_id")
+    if not restaurant_id:
+        return redirect("/business/registration/")
+    restaurant = get_object_or_404(Restaurant, id=restaurant_id)
+    all_reservations = Booking.objects.filter(restaurant=restaurant)
     return render(
         request, "Restaurants/reservations.html", {"reservations": all_reservations}
     )

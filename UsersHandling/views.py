@@ -107,6 +107,6 @@ def login_user(request):
 
 def logout_user(request):
     if request.method != "POST":
-        return auth(request)
+        return redirect("auth")
     logout(request)
     return redirect("home")

@@ -49,11 +49,20 @@ def build_combined(restaurants):
     # ]
     # print(t)
 
+    # Optimize by prefetching review summaries and tables
+    # 1. Get all review summaries for the given restaurants
+    summaries = {
+        s.restaurant_id: s for s in ReviewSummary.objects.filter(restaurant__in=restaurants)
+    }
+    
+    # 2. Add tables to prefetch if not already done in the view
+    # Note: We still call get_min_price which does restaurant.tables.all()
+    # It's better if the queryset passed to this function already has prefetch_related('tables')
+    
     return [
         (
             r,
-            ReviewSummary.objects.filter(restaurant=r).first(),
-            # If you want to uncomment this feature than handle the template accordingly, cuz then there would be 3 things to unpack now there are 2
+            summaries.get(r.id),
             get_min_price(r)
         )
         for r in restaurants

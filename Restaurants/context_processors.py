@@ -13,16 +13,17 @@ def owner_context(request):
 
     user = request.user
 
-    if isStaff(user):
-        staff_profile = RestaurantStaff.objects.filter(user=user).first()
+    # If user is ONLY staff (and not an owner), force their single restaurant
+    if isStaff(user) and not isOwner(user):
+        staff_profile = RestaurantStaff.objects.filter(user=user, role='STAFF').first()
         restaurant = staff_profile.restaurant if staff_profile else None
         selected_id = restaurant.id if restaurant else None
         request.session['selected_restaurant_id'] = selected_id
         return {
-        "CP__OwnerProfile": user,  # keep original user (important)
-        "CP__Restaurant": restaurant,
-        "CP__Selected": restaurant,
-    }
+            "CP__OwnerProfile": user,
+            "CP__Restaurant": restaurant,
+            "CP__Selected": restaurant,
+        }
 
     # Get ONLY OWNER roles for this user
     owner_staff = RestaurantStaff.objects.filter(

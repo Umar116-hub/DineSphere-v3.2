@@ -10,7 +10,8 @@
 <div class="main-grid">
 
     {% if restaurant_approval_status %}
-    <div class="approval-notification" style="grid-column: 1 / -1; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; {% if restaurant_approval_status.is_approved %}background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724;{% else %}background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404;{% endif %}">
+    <div class="approval-notification {% if restaurant_approval_status.is_approved %}approved{% else %}pending{% endif %}"
+         style="grid-column: 1 / -1; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px;">
         <div style="display: flex; align-items: center; gap: 10px;">
             <i class="fas {% if restaurant_approval_status.is_approved %}fa-check-circle{% else %}fa-clock{% endif %}" style="font-size: 20px;"></i>
             <div>
@@ -25,7 +26,7 @@
             <span class="card-title">Total Revenue</span>
             <i class="fas fa-ellipsis-h card-options"></i>
         </div>
-        <div class="total-likes-value">$ {{revenue}} </div>
+        <div class="total-likes-value">$ {{total_revenue}} </div>
         <div class="total-likes-chart">
             <div class="likes-line"></div>
             <svg viewBox="0 0 100 20" class="wave-svg" preserveAspectRatio="none">
@@ -196,7 +197,7 @@
             {% endif %}
         </div>
 
-        <div id="tab-logs" class="tab-content" style="display: {% if not active_dynamic_tab %}block{% else %}none{% endif %};">
+        <div id="tab-logs" class="tab-content {% if not active_dynamic_tab %}active{% endif %}">
             <div class="post-table">
                 <div class="post-table-row">
                     <div class="table-img"><img src="{{ CP__OwnerProfile.image.url }}" alt=""></div>
@@ -266,7 +267,7 @@
             </form>
         </div>
         {% if active_dynamic_tab %}
-        <div id="tab-dynamic" class="tab-content" style="display: '{% if active_dynamic_tab %}block{% else %}none{% endif %}';">
+        <div id="tab-dynamic" class="tab-content {% if active_dynamic_tab %}active{% endif %}">
             <form method="POST" action="{% url 'analytics' %}" class="config-form">
                 {% csrf_token %}
                 <h3 style="margin-bottom:20px; color:var(--primary-color);">Manage {{ active_dynamic_tab }}</h3>
@@ -299,20 +300,19 @@
         // 2. Add active class to clicked tab
         element.classList.add('active');
 
-        // 3. Hide all content sections
-        document.getElementById('tab-logs').style.display = 'none';
-        document.getElementById('tab-configs').style.display = 'none';
-        if (document.getElementById('tab-dynamic')) {
-            document.getElementById('tab-dynamic').style.display = 'none';
-        }
-
-        // 4. Show the selected section
+        // 3. Hide all content sections by removing active class
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+            content.style.display = ''; // Clear any previous inline styles
+        });
+        
+        // 4. Show the selected section by adding active class
         if (tabName === 'logs') {
-            document.getElementById('tab-logs').style.display = 'block';
+            document.getElementById('tab-logs').classList.add('active');
         } else if(tabName === 'configs') {
-            document.getElementById('tab-configs').style.display = 'block';
+            document.getElementById('tab-configs').classList.add('active');
         } else if(tabName === 'dynamic') {
-            document.getElementById('tab-dynamic').style.display = 'block';
+            document.getElementById('tab-dynamic').classList.add('active');
         }
     }
 

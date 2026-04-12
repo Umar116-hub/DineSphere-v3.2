@@ -463,7 +463,25 @@
 
          /* --- Tab Visibility --- */
 .tab-content {
+    display: none; /* Hidden by default */
     animation: fadeIn 0.3s ease;
+}
+
+.tab-content.active {
+    display: block; /* Shown when active class is present */
+}
+
+/* --- Approval Notification --- */
+.approval-notification.approved {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.approval-notification.pending {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
 }
 
 @keyframes fadeIn {

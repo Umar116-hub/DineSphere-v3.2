@@ -40,17 +40,20 @@ def get_available_tables(restaurant, date, start_time, end_time):
     """
     now = timezone.now()
 
+    # Combine date and times into awareness-ready datetimes for comparison
+    start_dt = timezone.make_aware(datetime.combine(date, start_time))
+    end_dt = timezone.make_aware(datetime.combine(date, end_time))
+
     booked_tables = Booking.objects.filter(
         restaurant=restaurant,
-        date=date,
-        start_time__lt=end_time,
-        end_time__gt=start_time,
-        is_confirmed=True
+        booking_start_datetime__lt=end_dt,
+        booking_end_datetime__gt=start_dt,
+        status=Booking.STATUS_CONFIRMED
     ).values_list('tables__id', flat=True)
 
     locked_tables = Booking.objects.filter(
-        locked_at__gte=now - timedelta(minutes=LOCK_DURATION_MINUTES),
-        is_confirmed=False
+        status=Booking.STATUS_PENDING,
+        locked_at__gte=now - timedelta(minutes=LOCK_DURATION_MINUTES)
     ).values_list('tables__id', flat=True)
 
     return Table.objects.filter(
@@ -80,13 +83,12 @@ def lock_tables(user, restaurant, tables, date, start_time, end_time):
             raise Exception(f"Table {table.name} just got booked!")
 
     booking = Booking.objects.create(
-        user=user,
+        customer=user,
         restaurant=restaurant,
-        date=date,
-        start_time=start_time,
-        end_time=end_time,
+        booking_start_datetime=timezone.make_aware(datetime.combine(date, start_time)),
+        booking_end_datetime=timezone.make_aware(datetime.combine(date, end_time)),
         locked_at=now,
-        is_confirmed=False
+        status=Booking.STATUS_PENDING
     )
 
     booking.tables.set(tables)
@@ -175,7 +177,7 @@ def confirm_booking(booking):
     - Lock removed
     - Booking becomes permanent
     """
-    booking.is_confirmed = True
+    booking.status = Booking.STATUS_CONFIRMED
     booking.locked_at = None
     booking.save()
 
@@ -198,7 +200,9 @@ def create_booking(request, Restaurant_name):
     naive_start = datetime.strptime(f"{date_str.strip()} {start_time_str.strip()}", "%Y-%m-%d %H:%M")
     start_datetime = timezone.make_aware(naive_start, timezone.get_current_timezone())
 
-    # Calculate end datetime
+    # Calculate end datetime - Ensuring duration is at least 1 hour if not specified
+    if duration <= 0:
+        duration = 1
     end_datetime = start_datetime + timedelta(hours=duration)
 
     # Create booking

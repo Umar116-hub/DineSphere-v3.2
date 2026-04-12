@@ -34,7 +34,10 @@ def home_page(request):
             is_favourite=models.Value(True, output_field=models.BooleanField())
         )
         if request.user.image:
-            user_image = request.user.image.url
+            try:
+                user_image = request.user.image.url
+            except ValueError:
+                user_image = None
 
 
     # Build combined dataset for all restaurants containing restaurant details, review summaries, and minimum prices

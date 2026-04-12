@@ -13,7 +13,11 @@
         <div class="cover-photo"></div>
         <div class="user-meta">
             <div class="avatar-container">
+                {% if request.user.image %}
                 <img src="{{ request.user.image.url }}" alt="Profile" class="profile-avatar">
+                {% else %}
+                <img src="https://placehold.co/150x150/008000/ffffff?text={{ request.user.username|slice:":1" }}" alt="Profile" class="profile-avatar">
+                {% endif %}
                 <label for="profile-image-upload" class="edit-avatar"><i class="fas fa-camera"></i></label>
             </div>
             <div class="user-details">
@@ -101,8 +105,7 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {% for booking in pending_booking %}
+                            {% for booking in pending_booking %}
                         <tr>
                             <td>{{ booking.id }}</td>
                             <td>{{ booking.created_at|date:"d/m/Y" }}</td>
@@ -114,9 +117,8 @@
                                 </button>
                             </td>
                         </tr>
+                        {% endfor %}
                     </tbody>
-
-                    {% endfor %}
                 </table>
                 {% endif %}
 
@@ -138,16 +140,15 @@
                             <th>Status</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {% for booking in completed_booking %}
+                            {% for booking in completed_booking %}
                         <tr>
                             <td>{{ booking.id }}</td>
                             <td>{{ booking.created_at|date:"d/m/Y" }}</td>
                             <td>${{ booking.total_price }}</td>
                             <td><span class="badge success">Completed</span></td>
                         </tr>
+                        {% endfor %}
                     </tbody>
-                    {% endfor %}
                 </table>
                 {% endif %}
             </div>
@@ -168,16 +169,15 @@
                             <th>Status</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {% for booking in canceled_booking %}
+                            {% for booking in canceled_booking %}
                         <tr>
                             <td>{{ booking.id }}</td>
                             <td>{{ booking.created_at|date:"d/m/Y" }}</td>
                             <td>${{ booking.total_price }}</td>
                             <td><span class="badge error">Cancelled</span></td>
                         </tr>
+                        {% endfor %}
                     </tbody>
-                    {% endfor %}
                 </table>
                 {% endif %}
             </div>

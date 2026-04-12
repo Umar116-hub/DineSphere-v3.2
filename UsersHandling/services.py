@@ -43,7 +43,7 @@ def add_restaurant_staff(request, username=None):
         restaurant_id = request.session.get('selected_restaurant_id')
         if not restaurant_id:
             messages.error(request, "No restaurant selected.")
-            return redirect('staff_list')
+            return redirect('staff_management')
 
         # 2. Find the user to be added
         try:
@@ -94,10 +94,8 @@ def verify_username(request):
     User = get_user_model()
     """AJAX endpoint to check if a user exists by username."""
     username = request.GET.get('username', '').strip()
-    print(username)
     # We check if user exists (case-insensitive)
     user_exists = User.objects.filter(username__iexact=username).exists()
-    print(user_exists)
     
     return JsonResponse({'exists': user_exists})
 
