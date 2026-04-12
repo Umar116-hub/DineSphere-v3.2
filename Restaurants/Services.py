@@ -194,68 +194,84 @@ def perform_dynamic_update(instance, data):
 
 
 def getAnalytics(restaurant_id):
-    customers = User.objects.filter(
-        bookings__restaurant_id=restaurant_id
-    ).distinct()
+    """
+    Calculate real restaurant analytics from booking data.
+    Replaces fake static values with actual database queries.
+    """
+    from django.utils import timezone
+    from datetime import timedelta
     
-    total_customers = customers.count()
-
-    # 2. Group by gender
-    gender_counts = customers.values('gender').annotate(count=Count('id'))
+    # Get confirmed bookings for this restaurant
+    confirmed_bookings = Booking.objects.filter(
+        restaurant_id=restaurant_id,
+        status='confirmed'
+    )
     
-    # Initialize counts
-    male_count = 0
-    female_count = 0
-    other_count = 0
-
-    for entry in gender_counts:
-        if entry['gender'] == 'M':
-            male_count = entry['count']
-        elif entry['gender'] == 'F':
-            female_count = entry['count']
-        else:
-            other_count += entry['count']
-
-    # 3. Calculate Percentages for the SVG (Avoid division by zero)
-    female_percent = (female_count / total_customers * 100) if total_customers > 0 else 0
-    male_percent = (male_count / total_customers * 100) if total_customers > 0 else 0
-
+    # Real booking statistics
+    total_bookings = confirmed_bookings.count()
+    
+    # Real revenue (from paid bookings)
+    total_revenue = confirmed_bookings.filter(
+        payment_status='paid'
+    ).aggregate(
+        total=Sum('total_price')
+    )['total'] or 0
+    
+    # This week's bookings
+    week_ago = timezone.now() - timedelta(days=7)
+    this_week_bookings = confirmed_bookings.filter(
+        created_at__gte=week_ago
+    ).count()
+    
+    # Last week's bookings for comparison
+    two_weeks_ago = timezone.now() - timedelta(days=14)
+    last_week_bookings = confirmed_bookings.filter(
+        created_at__gte=two_weeks_ago,
+        created_at__lt=week_ago
+    ).count()
+    
+    # Calculate weekly growth percentage
+    if last_week_bookings > 0:
+        weekly_growth = ((this_week_bookings - last_week_bookings) / last_week_bookings) * 100
+    else:
+        weekly_growth = 0 if this_week_bookings == 0 else 100
+    
+    # Upcoming bookings (today and future)
+    today = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    upcoming_bookings = confirmed_bookings.filter(
+        booking_start_datetime__gte=today
+    ).count()
+    
+    # Average party size
+    avg_guests = confirmed_bookings.aggregate(
+        avg=Avg('guest_count')
+    )['avg'] or 0
+    
+    # Real staff count
+    staff_count = RestaurantStaff.objects.filter(
+        restaurant_id=restaurant_id
+    ).count()
+    
+    # Order status breakdown
     order_stats = Booking.objects.filter(restaurant_id=restaurant_id).aggregate(
-        pending_count=Count('id', filter=Q(status__iexact='pending')),
-        finished_count=Count('id', filter=Q(status__iexact='finished')),
-        cancelled_count=Count('id', filter=Q(status__iexact='cancelled')),
+        pending_count=Count('id', filter=Q(status='pending')),
+        confirmed_count=Count('id', filter=Q(status='confirmed')),
+        cancelled_count=Count('id', filter=Q(status='cancelled')),
         total_bookings=Count('id')
     )
-
-    # 2. Calculate Total Revenue
-    # Revenue only comes from FINISHED bookings.
-    # Note: If your price logic is complex (properties/methods), 
-    # we usually store the "final_price" on the Booking model at time of completion.
-    # If you don't have a 'total_price' field on Booking, you'll need to sum the 
-    # base_price of the related tables:
     
-    revenue_data = Booking.objects.filter(
-        restaurant_id=restaurant_id, 
-        status__iexact='finished'
-    ).aggregate(
-        total_revenue=Sum('total_price') # Or 'total_price' if you added that field
-    )
-
-    context = {
-        
-        
-    }
-    print(order_stats)
-
     return {
-        'total_customers': total_customers,
-        'female_count': female_count,
-        'male_count': male_count,
-        'other_count': other_count,
-        'female_percent': round(female_percent),
-        'male_percent': round(male_percent),
-        'revenue': revenue_data['total_revenue'] or 0,
+        'total_bookings': total_bookings,
+        'total_revenue': total_revenue,
+        'this_week_bookings': this_week_bookings,
+        'last_week_bookings': last_week_bookings,
+        'weekly_growth': round(weekly_growth, 1),
+        'upcoming_bookings': upcoming_bookings,
+        'avg_guests': round(avg_guests, 1),
+        'staff_count': staff_count,
         'stats': order_stats,
+        # Remove fake demographics - use real data only
+        'total_customers': confirmed_bookings.values('user').distinct().count(),
     }
 
 
@@ -309,16 +325,3 @@ def get_items(request):
         return JsonResponse({'items': items})
     except Exception as e:
         return JsonResponse({'items': [], 'error': str(e)}, status=400)
-    
-
-# def get_unfinished_booking(request, restaurant_id):
-#     booking = Booking.objects.filter(
-#         restaurant_id=restaurant_id,
-#         card_number='',
-#         status__iexact='pending'
-#     ).first()
-#     if booking is not None:
-#         {
-            
-#         }
-#     return JsonResponse({'booking': booking})

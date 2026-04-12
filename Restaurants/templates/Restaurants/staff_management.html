@@ -16,7 +16,7 @@
     </div>
     <div class="card-content">
         <span class="card-label">Add New</span>
-        <span class="card-value">$560K</span>
+        <span class="card-value">Staff</span>
     </div>
     <i class="fas fa-circle-notch progress-mini"></i>
 </div>
@@ -26,7 +26,7 @@
     </div>
     <div class="card-content">
         <span class="card-label">Fire</span>
-        <span class="card-value">$150K</span>
+        <span class="card-value">Staff</span>
     </div>
     <i class="fas fa-bolt progress-mini"></i>
 </div>
@@ -36,7 +36,7 @@
     </div>
     <div class="card-content">
         <span class="card-label">Access Logs</span>
-        <span class="card-value">$185K</span>
+        <span class="card-value">View</span>
     </div>
     <i class="fas fa-chart-line progress-mini"></i>
 </div>
@@ -48,14 +48,14 @@
     </div>
     <div class="card-content">
         <span class="card-label">Refresh</span>
-        <span class="card-value">$742K</span>
+        <span class="card-value">Data</span>
     </div>
     <i class="fas fa-pie-chart progress-mini"></i>
 </div>
 {% endblock %}
 
 {% block model_name %}
-holidays
+staff
 {% endblock %}
 {% block content %}
 <div class="container">
@@ -73,26 +73,26 @@ holidays
         </div>
 
         <div class="filter-group">
-            <span class="filter-label">Label</span>
-            <select class="custom-select">
-                <option value="all">All Styles</option>
-                <option value="adventure">Adventure</option>
-                <option value="iconic">Iconic</option>
-                <option value="modern">Modern</option>
+            <span class="filter-label">Role</span>
+            <select class="custom-select" id="roleFilter">
+                <option value="">All Roles</option>
+                <option value="manager">Manager</option>
+                <option value="waiter">Waiter</option>
+                <option value="host">Host</option>
             </select>
         </div>
 
-        <div class="filter-group toggle-filter">
-            <label class="checkbox-wrapper">
-                <input type="checkbox" checked> Available
-            </label>
-            <label class="checkbox-wrapper">
-                <input type="checkbox"> Budget (Cheap)
-            </label>
+        <div class="filter-group">
+            <span class="filter-label">Status</span>
+            <select class="custom-select" id="statusFilter">
+                <option value="">All</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+            </select>
         </div>
 
         <div class="filter-group">
-            <input type="text" class="custom-select" placeholder="Search items..." style="width: 200px;">
+            <input type="text" class="custom-select" placeholder="Search staff..." style="width: 200px;">
         </div>
     </header>
 

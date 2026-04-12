@@ -47,9 +47,7 @@ def owner_context(request):
     # print(selected_restaurant)
     if not selected_restaurant and len(owners_restaurants) != 0:
         selected_restaurant = owners_restaurants.first()
-        selected_id = Restaurant.objects.filter(name=selected_restaurant.name, city=selected_restaurant.city, address=selected_restaurant.address).first().id
-        # print(selected_restaurant, selected_id)
-        request.session.get("selected_restaurant_id")
+        selected_id = selected_restaurant.id
         request.session['selected_restaurant_id'] = selected_id
 
     return {

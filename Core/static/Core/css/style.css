@@ -9,6 +9,21 @@ body {
     color: var(--text-color);
 }
 
+/* Focus indicators for accessibility */
+*:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+button:focus,
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+    outline: 2px solid #3498db;
+    outline-offset: 2px;
+}
+
 .cursor {
     position: fixed;
     top: 0;
@@ -162,15 +177,10 @@ nav p {
 .search-input {
     flex: 1;
     border: none !important;
-    outline: none;
     padding: 12px 16px;
     font-size: 16px;
     color: #333;
 
-}
-.search-input:focus {
-    outline: none !important;
-    border: none !important;
 }
 
 .search-input::placeholder {
@@ -1058,4 +1068,265 @@ nav p {
     display: block;
     /* Change from flex to block if you had it as flex */
     height: auto;
+}
+
+/* ============================================
+   TOAST NOTIFICATIONS
+   ============================================ */
+
+#toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    border-radius: 8px;
+    color: white;
+    font-weight: 500;
+    min-width: 300px;
+    max-width: 400px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transform: translateX(100%);
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.toast.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.toast-success { background: #27ae60; }
+.toast-error { background: #e74c3c; }
+.toast-warning { background: #f39c12; }
+.toast-info { background: #3498db; }
+
+.toast-icon {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.toast-message {
+    flex: 1;
+    font-size: 14px;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.toast-close:hover {
+    opacity: 1;
+}
+
+/* Hide original Django messages when converted to toast */
+.django-message {
+    display: none;
+}
+
+/* ============================================
+   MOBILE RESPONSIVE BREAKPOINTS
+   ============================================ */
+
+/* Tablet and smaller (max-width: 768px) */
+@media (max-width: 768px) {
+    /* Navigation */
+    nav {
+        flex-direction: column;
+        padding: 10px;
+    }
+    
+    .nav-links {
+        display: none; /* Hide regular nav, show hamburger */
+    }
+    
+    /* Restaurant grid - single column */
+    .restaurant-grid {
+        grid-template-columns: 1fr !important;
+        gap: 15px;
+        padding: 10px;
+    }
+    
+    /* Cards full width */
+    .restaurant-card {
+        width: 100%;
+        margin: 0;
+    }
+    
+    /* Booking form */
+    .booking-form {
+        padding: 15px;
+        margin: 10px;
+    }
+    
+    /* Table selection - 2 columns on mobile */
+    .table-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+    
+    .table-item {
+        padding: 15px;
+        font-size: 14px;
+    }
+    
+    /* Form inputs - larger touch targets */
+    input, select, button, textarea {
+        font-size: 16px; /* Prevent zoom on iOS */
+        min-height: 44px; /* Minimum touch target size */
+        padding: 12px;
+    }
+    
+    /* Checkout form */
+    .checkout-container {
+        width: 100%;
+        padding: 15px;
+    }
+    
+    /* Time dropdown */
+    .time-select {
+        width: 100%;
+        font-size: 16px;
+    }
+    
+    /* Analytics dashboard cards */
+    .analytics-cards {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    
+    .analytics-card {
+        padding: 15px;
+    }
+    
+    /* Tables management */
+    .tables-list {
+        overflow-x: auto;
+    }
+    
+    /* Staff management */
+    .staff-filters {
+        flex-direction: column;
+        gap: 10px;
+    }
+}
+
+/* Phone (max-width: 480px) */
+@media (max-width: 480px) {
+    /* Further reduce padding */
+    .container {
+        padding: 10px;
+    }
+    
+    /* Stack elements vertically */
+    .form-row {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    /* Single column tables */
+    .table-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    /* Full width buttons */
+    .btn, .btn-primary, .btn-secondary {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+    
+    /* Analytics single column */
+    .analytics-cards {
+        grid-template-columns: 1fr;
+    }
+    
+    /* Header text smaller */
+    h1 {
+        font-size: 24px;
+    }
+    
+    h2 {
+        font-size: 20px;
+    }
+    
+    /* Profile tabs */
+    .profile-tabs {
+        flex-direction: column;
+    }
+    
+    .profile-tab {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+/* Loading spinner */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3498db;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 8px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Toast notifications */
+.toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    border-radius: 5px;
+    color: white;
+    font-weight: 500;
+    z-index: 9999;
+    animation: slideIn 0.3s ease;
+    max-width: 300px;
+}
+
+.toast-success { background: #27ae60; }
+.toast-error { background: #e74c3c; }
+.toast-warning { background: #f39c12; }
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+.fade-out {
+    animation: fadeOut 0.3s ease forwards;
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
 }

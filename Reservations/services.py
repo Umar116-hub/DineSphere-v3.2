@@ -1,5 +1,6 @@
 from django.utils import timezone
 from datetime import timedelta, datetime, time
+from decimal import Decimal
 from django.db import transaction
 from .utils import group_tables_by_seating
 from django.utils.dateparse import parse_date, parse_time
@@ -92,6 +93,63 @@ def lock_tables(user, restaurant, tables, date, start_time, end_time):
     return booking
 
 
+def generate_time_slots(restaurant, interval_minutes=30):
+    """
+    Generate time slots within restaurant opening hours.
+    
+    Args:
+        restaurant: Restaurant object with opening_time and closing_time
+        interval_minutes: Time interval between slots (default 30 min)
+    
+    Returns:
+        List of time strings in 'HH:MM' format
+    """
+    if not restaurant.opening_time or not restaurant.closing_time:
+        # Default fallback if hours not set
+        return [f"{h:02d}:{m:02d}" for h in range(11, 23) for m in (0, 30)]
+    
+    slots = []
+    current = datetime.combine(datetime.today(), restaurant.opening_time)
+    closing = datetime.combine(datetime.today(), restaurant.closing_time)
+    
+    # Handle overnight closing (e.g., 2 AM)
+    if closing < current:
+        closing += timedelta(days=1)
+    
+    while current <= closing:
+        slots.append(current.strftime('%H:%M'))
+        current += timedelta(minutes=interval_minutes)
+    
+    return slots
+
+
+def validate_booking_time(restaurant, date, start_time, end_time):
+    """
+    Validate that booking time is within restaurant hours.
+    
+    Returns:
+        (is_valid, error_message)
+    """
+    # Check if holiday
+    special = SpecialDay.objects.filter(
+        restaurant=restaurant,
+        date=date,
+        closed_full_day=True
+    ).first()
+    
+    if special:
+        return False, f"Restaurant is closed on {date} for {special.name}"
+    
+    # Check if within operating hours
+    if start_time < restaurant.opening_time:
+        return False, f"Booking starts before opening time ({restaurant.opening_time.strftime('%I:%M %p')})"
+    
+    if end_time > restaurant.closing_time:
+        return False, f"Booking ends after closing time ({restaurant.closing_time.strftime('%I:%M %p')})"
+    
+    return True, None
+
+
 def calculate_booking_price(tables, duration_hours):
     """
     Calculate total booking price.
@@ -129,7 +187,7 @@ def create_booking(request, Restaurant_name):
     # Fetch form data
     date_str = request.POST.get("date")  # 'YYYY-MM-DD'
     start_time_str = request.POST.get("start_time")  # 'HH:MM'
-    duration = int(request.POST.get("end_time", 0))  # convert to int safely
+    duration = int(request.POST.get("duration", 0))  # convert to int safely
     price = request.POST.get("price")
     table_ids = request.POST.getlist("table_ids")
 
@@ -269,3 +327,64 @@ def view_all_booking(restaurant: Restaurant, date_str=None, start_time_str=None,
         "start_time": start_time_str,
         "end_time": end_time_str
     }
+
+
+def generate_invoice_html(booking):
+    """
+    Generate HTML invoice for booking.
+    Dev-only: Creates printable HTML invoice (no PDF library needed)
+    """
+    from django.template.loader import render_to_string
+    
+    invoice_data = {
+        'booking': booking,
+        'restaurant': booking.restaurant,
+        'customer': booking.customer,
+        'tables': booking.tables.all(),
+        'invoice_number': f"INV-{booking.id:06d}",
+        'invoice_date': timezone.now().strftime('%Y-%m-%d'),
+        'subtotal': booking.total_price,
+        'tax': booking.total_price * Decimal('0.1'),  # 10% tax example
+        'total': booking.total_price * Decimal('1.1'),
+    }
+    
+    return render_to_string('Reservations/invoice_template.html', invoice_data)
+
+
+def send_booking_confirmation_email(booking):
+    """
+    Send booking confirmation email to customer.
+    Dev-only: Console backend for development (no SMTP needed)
+    """
+    from django.core.mail import send_mail
+    from django.conf import settings
+    
+    subject = f'Booking Confirmation - {booking.restaurant.name}'
+    message = f"""
+    Dear {booking.customer.username},
+
+    Your booking has been confirmed!
+
+    Restaurant: {booking.restaurant.name}
+    Date: {booking.booking_start_datetime.strftime('%B %d, %Y')}
+    Time: {booking.booking_start_datetime.strftime('%I:%M %p')}
+    Table(s): {', '.join([t.name for t in booking.tables.all()])}
+    Total: ${booking.total_price}
+
+    Booking Reference: #{booking.id}
+
+    Thank you for choosing DineSphere!
+    """
+    
+    try:
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[booking.customer.email],
+            fail_silently=True,
+        )
+        return True
+    except Exception as e:
+        print(f"Email sending failed: {e}")
+        return False

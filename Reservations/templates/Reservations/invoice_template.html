@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice {{ invoice_number }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .invoice-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 20px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3498db;
+        }
+        .invoice-title {
+            text-align: right;
+        }
+        .invoice-title h1 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 28px;
+        }
+        .invoice-title p {
+            margin: 5px 0;
+            color: #7f8c8d;
+        }
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 30px;
+        }
+        .section h3 {
+            color: #3498db;
+            margin-bottom: 10px;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+        .section p {
+            margin: 5px 0;
+            color: #2c3e50;
+        }
+        .booking-details {
+            background: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .booking-details h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #bdc3c7;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .tables-list {
+            margin-bottom: 30px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        th {
+            background: #3498db;
+            color: white;
+            font-weight: 600;
+        }
+        .totals {
+            margin-top: 30px;
+            border-top: 2px solid #3498db;
+            padding-top: 20px;
+        }
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+        }
+        .total-row.grand-total {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2c3e50;
+            border-top: 2px solid #2c3e50;
+            margin-top: 10px;
+            padding-top: 15px;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ecf0f1;
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 12px;
+        }
+        .download-btn {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        @media print {
+            body { background: white; }
+            .invoice-container { box-shadow: none; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="invoice-container">
+        <div class="header">
+            <div class="logo">
+                🍽️ DineSphere
+            </div>
+            <div class="invoice-title">
+                <h1>INVOICE</h1>
+                <p><strong>Invoice #:</strong> {{ invoice_number }}</p>
+                <p><strong>Date:</strong> {{ invoice_date }}</p>
+                <p><strong>Booking Ref:</strong> #{{ booking.id }}</p>
+            </div>
+        </div>
+
+        <div class="details-grid">
+            <div class="section">
+                <h3>Bill To</h3>
+                <p><strong>{{ customer.username }}</strong></p>
+                <p>{{ customer.email }}</p>
+                {% if customer.phone %}
+                <p>{{ customer.phone }}</p>
+                {% endif %}
+            </div>
+            <div class="section">
+                <h3>Restaurant</h3>
+                <p><strong>{{ restaurant.name }}</strong></p>
+                <p>{{ restaurant.location }}</p>
+                <p>{{ restaurant.city }}</p>
+                <p>{{ restaurant.phone }}</p>
+            </div>
+        </div>
+
+        <div class="booking-details">
+            <h3>Reservation Details</h3>
+            <div class="detail-row">
+                <span>Date:</span>
+                <span>{{ booking.booking_start|date:"F d, Y" }}</span>
+            </div>
+            <div class="detail-row">
+                <span>Time:</span>
+                <span>{{ booking.booking_start|time:"g:i A" }} - {{ booking.booking_end|time:"g:i A" }}</span>
+            </div>
+            <div class="detail-row">
+                <span>Guests:</span>
+                <span>{{ booking.guest_count|default:"Not specified" }}</span>
+            </div>
+            <div class="detail-row">
+                <span>Status:</span>
+                <span>{{ booking.status|title }}</span>
+            </div>
+        </div>
+
+        <div class="tables-list">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Table</th>
+                        <th>Type</th>
+                        <th>Capacity</th>
+                        <th>Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for table in tables %}
+                    <tr>
+                        <td>{{ table.table_number }}</td>
+                        <td>{{ table.seating_type.name|default:"Standard" }}</td>
+                        <td>{{ table.capacity }} guests</td>
+                        <td>${{ table.calculate_price }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="totals">
+            <div class="total-row">
+                <span>Subtotal:</span>
+                <span>${{ subtotal }}</span>
+            </div>
+            <div class="total-row">
+                <span>Tax (10%):</span>
+                <span>${{ tax|floatformat:2 }}</span>
+            </div>
+            <div class="total-row grand-total">
+                <span>Total Paid:</span>
+                <span>${{ total|floatformat:2 }}</span>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Thank you for dining with DineSphere!</p>
+            <p>For any questions, contact {{ restaurant.name }} at {{ restaurant.phone }}</p>
+            <p>Or email us at support@dinesphere.com</p>
+            
+            <div class="no-print">
+                <button onclick="window.print()" class="download-btn">📄 Print / Save as PDF</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

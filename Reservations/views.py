@@ -1,18 +1,16 @@
-from datetime import datetime
-from django.http import JsonResponse
+from datetime import datetime, timedelta
+from django.http import HttpResponse, JsonResponse
 from django.utils import timezone
-from django.shortcuts import redirect, render, get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from Restaurants.models import Restaurant, Table
-from .services import (
-    create_booking,
-    view_all_booking
-)
-from Restaurants.models import Restaurant, Review
-from .utils import  replace_with_space
+from django.contrib import messages
+from django.db.models import Sum
+from django.db import transaction
 from .models import Booking
+from Restaurants.models import Restaurant, Table, Review
+from .services import view_all_booking, create_booking, generate_invoice_html, send_booking_confirmation_email
 
-
+@login_required
 def booking_view(request, Restaurant_name):
     """
     Handles restaurant table reservations.
@@ -28,7 +26,7 @@ def booking_view(request, Restaurant_name):
     POST parameters:
         - date, start_time, end_time, table_ids, required_capacity
     """
-    Restaurant_name = replace_with_space(Restaurant_name)
+    Restaurant_name = Restaurant_name.replace("_", " ")
     restaurant = get_object_or_404(Restaurant, name=Restaurant_name)
 
     if request.method == "GET":
@@ -54,35 +52,103 @@ def checkout_view(request):
 
 
 
+@login_required
+@transaction.atomic
 def placeOrder_view(request):
+    """
+    Process payment and confirm booking.
+    Uses atomic transaction with select_for_update to prevent race conditions.
+    """
     s_time = request.POST.get("s_time")
     date = request.POST.get("date")
-    # Combine and parse datetime
-    naive_dt = datetime.strptime(
-        f"{date} {s_time}",
-        "%Y-%m-%d %H:%M"
-    )
+    
+    if not s_time or not date:
+        messages.error(request, "Missing booking information.")
+        return redirect("checkout")
+    
+    try:
+        # Get the latest pending booking for this user
+        # The booking was created when user clicked "Reserve & Lock" on reservation page
+        booking = Booking.objects.select_for_update().filter(
+            customer=request.user,
+            status=Booking.STATUS_PENDING
+        ).order_by('-created_at').first()
+        
+        if not booking:
+            messages.error(request, "No pending booking found. Please create a booking first.")
+            return redirect("home")
+        
+        # Get tables associated with this booking
+        tables = list(booking.tables.all())
+        
+        if not tables:
+            messages.error(request, "No tables selected for this booking.")
+            return redirect("home")
+        
+        # Verify tables are still available (double-check inside transaction)
+        for table in tables:
+            overlapping = Booking.objects.filter(
+                tables=table,
+                status=Booking.STATUS_CONFIRMED,
+                booking_start_datetime__lt=booking.booking_end_datetime,
+                booking_end_datetime__gt=booking.booking_start_datetime
+            ).exclude(id=booking.id).exists()
+            
+            if overlapping:
+                messages.error(request, f"Table {table.name} is no longer available. Please select different tables.")
+                booking.delete()
+                return redirect("home")
+        
+        # Process payment (mock validation)
+        card_number = request.POST.get("cn", "").replace(" ", "")
+        if len(card_number) < 13 or not card_number.isdigit():
+            messages.error(request, "Please enter a valid card number.")
+            return redirect("checkout")
+        
+        # Confirm the booking
+        booking.status = Booking.STATUS_CONFIRMED
+        booking.payment_status = Booking.PAYMENT_STATUS_PAID
+        booking.save()
+        
+        # Send confirmation email
+        send_booking_confirmation_email(request.user, booking)
+        
+        messages.success(request, "Booking confirmed successfully!")
+        return redirect("order_success", booking_id=booking.id)
+        
+    except Exception as e:
+        messages.error(request, f"An error occurred: {str(e)}")
+        return redirect("checkout")
 
-    # Convert to timezone-aware datetime
-    start_datetime = timezone.make_aware(naive_dt)
-    card_name = request.POST.get("card-name")
-    card_number = request.POST.get("cn")
-    if all([s_time, date, naive_dt, card_name, card_number]):
-        print("hey Debug statement")
-    Booking.objects.filter(customer=request.user, status=Booking.STATUS_PENDING, booking_start_datetime=start_datetime).update(
-        name_on_the_card=card_name,
-        card_number=card_number,
-    )
-    return redirect("/")
+
+@login_required
+def order_success(request, booking_id):
+    """Display booking confirmation with invoice option."""
+    booking = get_object_or_404(Booking, id=booking_id, customer=request.user)
+    
+    # Generate invoice HTML
+    invoice_html = generate_invoice_html(booking)
+    
+    return render(request, "Reservations/success.html", {
+        "booking": booking,
+        "invoice_html": invoice_html,
+        "restaurant": booking.restaurant
+    })
+
+
+@login_required
+def view_invoice(request, booking_id):
+    """Display printable invoice for a booking."""
+    booking = get_object_or_404(Booking, id=booking_id, customer=request.user)
+    
+    invoice_html = generate_invoice_html(booking)
+    
+    return HttpResponse(invoice_html)
 
 
 @login_required
 def post_review(request, Restaurant_name):
-    print(request.method)
-    if request.method == "GET":
-        print(Restaurant_name, "RESTAURANT NAME get")  # Debug print
     if request.method == "POST":
-        print(Restaurant_name, "RESTAURANT NAME")  # Debug print
         rating = request.POST.get("rating")
         text = request.POST.get("text")
         # Validate data
@@ -90,7 +156,7 @@ def post_review(request, Restaurant_name):
             return JsonResponse({"success": False, "error": "Rating required"})
         
         # Save review to your model
-        restaurant = Restaurant.objects.get(name=Restaurant_name.replace("_", " "))
+        restaurant = get_object_or_404(Restaurant, name=Restaurant_name.replace("_", " "))
         Review.objects.create(
             restaurant=restaurant,
             user=request.user,
@@ -98,28 +164,22 @@ def post_review(request, Restaurant_name):
             comment=text,
             on_display=False
         )
-        print(type(Restaurant_name), "HOYE HOYE")
 
         return JsonResponse({"success": True})
 
     return JsonResponse({"success": False, "error": "Invalid request method"})
 
 
-
-# from django.http import JsonResponse
 from django.utils.dateparse import parse_date
-# from .models import Booking
-# from Restaurants.models import Restaurant
 
 def get_unavailable_tables(request):
     restaurant_name = request.GET.get("restaurant")
     date_str = request.GET.get("date")
-    print(restaurant_name, date_str, "PARAMS")  # Debug print
 
     if not restaurant_name or not date_str:
         return JsonResponse({"error": "Missing params"}, status=400)
 
-    restaurant = Restaurant.objects.get(name=restaurant_name.replace("_", " "))
+    restaurant = get_object_or_404(Restaurant, name=restaurant_name.replace("_", " "))
     selected_date = parse_date(date_str)
 
     # Get bookings for that restaurant + date

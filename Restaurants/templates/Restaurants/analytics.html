@@ -9,9 +9,20 @@
 {% block content %}
 <div class="main-grid">
 
+    {% if restaurant_approval_status %}
+    <div class="approval-notification" style="grid-column: 1 / -1; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; {% if restaurant_approval_status.is_approved %}background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724;{% else %}background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404;{% endif %}">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <i class="fas {% if restaurant_approval_status.is_approved %}fa-check-circle{% else %}fa-clock{% endif %}" style="font-size: 20px;"></i>
+            <div>
+                <strong>{{ restaurant_approval_status.name }}</strong> - {{ restaurant_approval_status.message }}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <div class="card total-likes-card">
         <div class="card-header">
-            <span class="card-title">Total Revenew</span>
+            <span class="card-title">Total Revenue</span>
             <i class="fas fa-ellipsis-h card-options"></i>
         </div>
         <div class="total-likes-value">$ {{revenue}} </div>
@@ -178,7 +189,7 @@
             {% if active_dynamic_tab %}
             <div id="dynamic-tab-header" class="table-tab {% if active_dynamic_tab %}active{% endif %}" onclick="switchTab('dynamic', this)"
                 style="display: flex; align-items: center; gap: 10px;">
-                <span id="dynamic-tab-title">{{ active_dynamic_tab }}</span>
+                <span id="dynamic-tab-title">{{ active_dynamic_tab|title }}</span>
                 <i class="fas fa-times" onclick="closeDynamicTab(event)"
                     style="font-size: 0.7rem; cursor: pointer; color: var(--red-notification);"></i>
             </div>

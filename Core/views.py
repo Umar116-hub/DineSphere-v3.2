@@ -33,9 +33,8 @@ def home_page(request):
         favorite_restaurants = Restaurant.objects.filter(id__in=user_favs, is_approved=True).annotate(
             is_favourite=models.Value(True, output_field=models.BooleanField())
         )
-        user_profile = CustomerProfile.objects.filter(user=request.user).first()
-        if user_profile and user_profile.user.image:
-            user_image = user_profile.user.image.url
+        if request.user.image:
+            user_image = request.user.image.url
 
 
     # Build combined dataset for all restaurants containing restaurant details, review summaries, and minimum prices
@@ -43,9 +42,6 @@ def home_page(request):
 
     # Build combined dataset for all favorite restaurants containing restaurant details, review summaries, and minimum prices
     favorite_combined = build_combined(favorite_restaurants)
-
-    # print(restaurants, "IM in core")
-    print(favorite_combined, "vaf resoauarn", combined)
 
     return render(request, "Core/home.html", {
         "Restaurants": restaurants,

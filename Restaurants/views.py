@@ -60,7 +60,6 @@ def registration(request):
 
         except Exception as e:
             messages.error(request, str(e))
-            print(" i am here", str(e))
             return redirect("/")
     seating_types = SeatingType.objects.all()
     if request.user.is_authenticated:
@@ -122,19 +121,99 @@ def analytics(request, tab=None):
             # 3. Validate and Save
             if form and form.is_valid():
                 form.save()
-                # Success! Redirect to clear the POST data and the dynamic tab
-            return redirect("analytics")
+            # Success! Redirect to clear the POST data and the dynamic tab
+        return redirect("analytics")
             
 
-    if RestaurantStaff.objects.filter(user=request.user).first().role != "OWNER":
-        print("Not an owner, redirecting...")
+    staff = RestaurantStaff.objects.filter(user=request.user).first()
+    if not staff or staff.role != "OWNER":
         return redirect("/business/staff-management/")
     restaurants = Restaurant.objects.filter(
         restaurantstaff__in=RestaurantStaff.objects.filter(user=request.user)
     ).distinct()
     restaurant_id = request.session.get("selected_restaurant_id")
-    context = getAnalytics(restaurant_id)
+    
+    # Get real analytics data instead of fake static values
+    from django.db.models import Sum, Count, Avg
+    from django.utils import timezone
+    from datetime import timedelta
+    
+    # Real booking statistics
+    if restaurant_id:
+        # Get all confirmed bookings for this restaurant
+        confirmed_bookings = Booking.objects.filter(
+            restaurant_id=restaurant_id,
+            status='confirmed'
+        )
+        
+        # Total bookings count
+        total_bookings = confirmed_bookings.count()
+        
+        # Total revenue
+        total_revenue = confirmed_bookings.aggregate(
+            total=Sum('total_price')
+        )['total'] or 0
+        
+        # This week's bookings
+        week_ago = timezone.now() - timedelta(days=7)
+        this_week_bookings = confirmed_bookings.filter(
+            created_at__gte=week_ago
+        ).count()
+        
+        # Last week's bookings for comparison
+        two_weeks_ago = timezone.now() - timedelta(days=14)
+        last_week_bookings = confirmed_bookings.filter(
+            created_at__gte=two_weeks_ago,
+            created_at__lt=week_ago
+        ).count()
+        
+        # Calculate growth percentage
+        if last_week_bookings > 0:
+            weekly_growth = ((this_week_bookings - last_week_bookings) / last_week_bookings) * 100
+        else:
+            weekly_growth = 0 if this_week_bookings == 0 else 100
+        
+        # Upcoming bookings (today and future)
+        today = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        upcoming_bookings = confirmed_bookings.filter(
+            booking_start_datetime__gte=today
+        ).count()
+        
+        # Average party size
+        avg_guests = confirmed_bookings.aggregate(
+            avg=Avg('guest_count')
+        )['avg'] or 0
+        
+        # Real staff count
+        staff_count = RestaurantStaff.objects.filter(
+            restaurant_id=restaurant_id
+        ).count()
+        
+        # Replace fake data with real data in context
+        context = {
+            'total_bookings': total_bookings,
+            'total_revenue': total_revenue,
+            'this_week_bookings': this_week_bookings,
+            'last_week_bookings': last_week_bookings,
+            'weekly_growth': round(weekly_growth, 1),
+            'upcoming_bookings': upcoming_bookings,
+            'avg_guests': round(avg_guests, 1),
+            'staff_count': staff_count,
+        }
+    else:
+        context = {}
+    
     context["restaurants"] = restaurants
+
+    # Add restaurant approval status notification
+    if restaurant_id:
+        selected_restaurant = Restaurant.objects.filter(id=restaurant_id).first()
+        if selected_restaurant:
+            context["restaurant_approval_status"] = {
+                "is_approved": selected_restaurant.is_approved,
+                "name": selected_restaurant.name,
+                "message": "Your restaurant is approved and visible to customers." if selected_restaurant.is_approved else "Your restaurant is pending approval. It will be visible after admin review."
+            }
 
     restaurant_staff = get_current_restaurant_staff(restaurant_id)
     context["all_staff"] = restaurant_staff
@@ -143,8 +222,8 @@ def analytics(request, tab=None):
         try:
             context["form"] = getForm(tab)
             context["active_dynamic_tab"] = tab
-        except:
-            print("FAILED")
+        except ValueError:
+            pass
 
     return render(request, "Restaurants/analytics.html", context)
 
@@ -163,12 +242,12 @@ def tables(request):
             obj.save()
             messages.success(request, "Table added successfully!")
             log_event(
-            request.user.username,
-            {
-                "action": "added_table",
-                "details": f"Added table {obj.name} (ID: {obj.id}) to restaurant ID {restaurant_id}",
-            },
-        )
+                request.user.username,
+                {
+                    "action": "added_table",
+                    "details": f"Added table {obj.name} (ID: {obj.id}) to restaurant ID {restaurant_id}",
+                },
+            )
         else:
             messages.error(
                 request, "Failed to add table. Please check the form for errors."
@@ -196,14 +275,14 @@ def holidays(request):
 
         if form.is_valid():
             obj = form.save(commit=False)
-            obj.restaurant = restaurant  # 🔥 REQUIRED
+            obj.restaurant = restaurant  # REQUIRED
             obj.save()
             log_event(
-            request.user.username,
-            {
-                "action": "added_holiday",
-                "details": f"Added holiday {obj.name} (ID: {obj.id}) to restaurant ID {restaurant_id}",
-            },
+                request.user.username,
+                {
+                    "action": "added_holiday",
+                    "details": f"Added holiday {obj.name} (ID: {obj.id}) to restaurant ID {restaurant_id}",
+                },
             )
             messages.success(request, "Holiday added successfully!")
         else:
@@ -251,7 +330,7 @@ def business_info(request):
         if form.is_valid():
             restaurant = form.save()
 
-            # 🔥 optional: store in session (since you're using it elsewhere)
+            # optional: store in session (since you're using it elsewhere)
             request.session["selected_restaurant_id"] = restaurant.id
             RestaurantStaff.objects.create(
                 user=request.user,  # current logged-in user
@@ -371,11 +450,11 @@ def updateBusiness(request, id):
         data = json.loads(request.body)
         perform_dynamic_update(instance, data)
         log_event(
-        request.user.username,
-        {
-            "action": "updated_business",
-            "details": f"Updated business {instance.name} (ID: {instance.id})",
-        },
+            request.user.username,
+            {
+                "action": "updated_business",
+                "details": f"Updated business {instance.name} (ID: {instance.id})",
+            },
         )
         return JsonResponse({"status": "success", "message": "Business updated"})
 
@@ -391,7 +470,7 @@ def updateTables(request, id):
                 "action": "updated_table",
                 "details": f"Updated table {instance.name} (ID: {instance.id}) in restaurant ID {instance.restaurant.id}",
             },
-            )
+        )
         return JsonResponse({"status": "success", "message": "Table updated"})
     return redirect("/business/tables")
 
@@ -402,11 +481,11 @@ def updateHolidays(request, id):
         data = json.loads(request.body)
         perform_dynamic_update(instance, data)
         log_event(
-        request.user.username,
-        {
-            "action": "updated_holiday",
-            "details": f"Updated holiday {instance.name} (ID: {instance.id}) in restaurant ID {instance.restaurant.id}",
-        },
+            request.user.username,
+            {
+                "action": "updated_holiday",
+                "details": f"Updated holiday {instance.name} (ID: {instance.id}) in restaurant ID {instance.restaurant.id}",
+            },
         )
         return JsonResponse({"status": "success", "message": "Holiday updated"})
 
@@ -417,7 +496,6 @@ def deleteBusiness(request, id):
     if request.method == "POST":
         instance = get_object_or_404(Restaurant, id=id)
         instance.delete()
-        # return JsonResponse({"status": "success", "message": "Business deleted"})
         return redirect("/business/business-info/")
 
 
@@ -426,7 +504,6 @@ def deleteTables(request, id):
     if request.method == "POST":
         instance = get_object_or_404(Table, id=id)
         instance.delete()
-        # return JsonResponse({"status": "success", "message": "Table deleted"})
         return redirect("/business/tables/")
 
 
@@ -435,7 +512,6 @@ def deleteHolidays(request, id):
     if request.method == "POST":
         instance = get_object_or_404(SpecialDay, id=id)
         instance.delete()
-        # return JsonResponse({"status": "success", "message": "Holiday deleted"})
         return redirect("/business/holidays/")
 
 

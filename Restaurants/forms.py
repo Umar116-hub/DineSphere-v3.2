@@ -80,7 +80,7 @@ class ReviewForm(forms.ModelForm):
         exclude = ['restaurant', 'user', 'created_at']  # set in view
 
         widgets = {
-            'review_text': forms.Textarea(attrs={
+            'comment': forms.Textarea(attrs={
                 'rows': 3,
                 'placeholder': 'Write your review...'
             }),

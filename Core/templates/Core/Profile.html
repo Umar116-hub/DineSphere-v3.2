@@ -79,102 +79,107 @@
                 </div>
                 {% endif %}
             </div>
-            <div id="pending-orders" class="tab-content">
-                <h3>Current Orders</h3>
-                <div class="table-container">
-                    {% if not pending_booking %}
-                    <p>You have no pending orders.</p>
-                    {% else %}
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Order ID</th>
-                                <th>Date</th>
-                                <th>Total</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for booking in pending_booking %}
-                            <tr>
-                                <td>{{ booking.id }}</td>
-                                <td>{{ booking.created_at|date:"d/m/Y" }}</td>
-                                <td>${{ booking.total_price }}</td>
-                                <td><span class="badge pending">Pending</span></td>
-                                <td>
-                                    <button class="btn-cancel" onclick="confirmCancel('{{ booking.id }}')">
-                                        <i class="fas fa-times-circle"></i> Cancel
-                                    </button>
-                                </td>
-                            </tr>
-                        </tbody>
-
-                        {% endfor %}
-                    </table>
-                    {% endif %}
-
+        </div>
+        <div id="pending-orders" class="tab-content">
+            <h3>Current Orders</h3>
+            <div class="table-container">
+                {% if not pending_booking %}
+                <div class="empty-state">
+                    <div class="empty-icon">📅</div>
+                    <h4>No Pending Orders</h4>
+                    <p>You don't have any upcoming reservations.</p>
+                    <a href="{% url 'home' %}" class="btn-browse">Browse Restaurants</a>
                 </div>
+                {% else %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Date</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in pending_booking %}
+                        <tr>
+                            <td>{{ booking.id }}</td>
+                            <td>{{ booking.created_at|date:"d/m/Y" }}</td>
+                            <td>${{ booking.total_price }}</td>
+                            <td><span class="badge pending">Pending</span></td>
+                            <td>
+                                <button class="btn-cancel" onclick="confirmCancel('{{ booking.id }}')">
+                                    <i class="fas fa-times-circle"></i> Cancel
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+
+                    {% endfor %}
+                </table>
+                {% endif %}
+
             </div>
+        </div>
 
-            <div id="finished-orders" class="tab-content">
-                <h3>Order History</h3>
-                <div class="table-container">
-                    {% if not completed_booking %}
-                    <p>You have no completed orders.</p>
-                    {% else %}
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Order ID</th>
-                                <th>Date</th>
-                                <th>Total</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for booking in completed_booking %}
-                            <tr>
-                                <td>{{ booking.id }}</td>
-                                <td>{{ booking.created_at|date:"d/m/Y" }}</td>
-                                <td>${{ booking.total_price }}</td>
-                                <td><span class="badge success">Completed</span></td>
-                            </tr>
-                        </tbody>
-                        {% endfor %}
-                    </table>
-                    {% endif %}
-                </div>
+        <div id="finished-orders" class="tab-content">
+            <h3>Order History</h3>
+            <div class="table-container">
+                {% if not completed_booking %}
+                <p>You have no completed orders.</p>
+                {% else %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Date</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in completed_booking %}
+                        <tr>
+                            <td>{{ booking.id }}</td>
+                            <td>{{ booking.created_at|date:"d/m/Y" }}</td>
+                            <td>${{ booking.total_price }}</td>
+                            <td><span class="badge success">Completed</span></td>
+                        </tr>
+                    </tbody>
+                    {% endfor %}
+                </table>
+                {% endif %}
             </div>
+        </div>
 
-            <div id="cancelled-orders" class="tab-content">
-                <h3>Cancelled Orders</h3>
-                <div class="table-container">
-                    {% if not canceled_booking %}
-                    <p>You have no cancelled orders.</p>
-                    {% else %}
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Order ID</th>
-                                <th>Date</th>
-                                <th>Total</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for booking in canceled_booking %}
-                            <tr>
-                                <td>{{ booking.id }}</td>
-                                <td>{{ booking.created_at|date:"d/m/Y" }}</td>
-                                <td>${{ booking.total_price }}</td>
-                                <td><span class="badge error">Cancelled</span></td>
-                            </tr>
-                        </tbody>
-                        {% endfor %}
-                    </table>
-                    {% endif %}
-                </div>
+        <div id="cancelled-orders" class="tab-content">
+            <h3>Cancelled Orders</h3>
+            <div class="table-container">
+                {% if not canceled_booking %}
+                <p>You have no cancelled orders.</p>
+                {% else %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Date</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in canceled_booking %}
+                        <tr>
+                            <td>{{ booking.id }}</td>
+                            <td>{{ booking.created_at|date:"d/m/Y" }}</td>
+                            <td>${{ booking.total_price }}</td>
+                            <td><span class="badge error">Cancelled</span></td>
+                        </tr>
+                    </tbody>
+                    {% endfor %}
+                </table>
+                {% endif %}
             </div>
         </div>
     </div>

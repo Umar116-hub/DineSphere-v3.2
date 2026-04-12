@@ -21,9 +21,8 @@ class Booking(models.Model):
 
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=STATUS_PENDING)
 
-    # Payment info
-    card_number = models.CharField(max_length=16)
-    name_on_the_card = models.CharField(max_length=50)
+    # Payment status only - no card data stored (PCI compliance)
+    payment_status = models.CharField(max_length=20, default='pending')
 
     total_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
     created_at = models.DateTimeField(auto_now_add=True)

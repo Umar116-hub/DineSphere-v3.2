@@ -1,0 +1,76 @@
+{% extends "Core/base.html" %}
+{% load static %}
+
+{% block title %}Order Confirmed{% endblock %}
+
+{% block links %}
+<link rel="stylesheet" href="{% static 'Reservations/css/checkout.css' %}">
+{% endblock %}
+
+{% block main %}
+<div class="checkout-container" style="max-width: 600px; margin: 50px auto; text-align: center;">
+    <div class="success-icon" style="font-size: 80px; color: #27ae60; margin-bottom: 20px;">
+        <i class="fas fa-check-circle"></i>
+    </div>
+    
+    <h1 style="color: #2c3e50; margin-bottom: 10px;">Order Placed Successfully!</h1>
+    <p style="color: #7f8c8d; margin-bottom: 30px;">Thank you for your reservation. Here are your booking details:</p>
+    
+    <div class="order-summary" style="background: #f8f9fa; padding: 30px; border-radius: 12px; text-align: left; margin-bottom: 30px;">
+        <h3 style="margin-bottom: 20px; color: #2c3e50;">Booking Receipt</h3>
+        
+        <div class="detail-row" style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+            <span style="color: #7f8c8d;">Booking ID:</span>
+            <span style="font-weight: bold; color: #2c3e50;">#{{ booking.id }}</span>
+        </div>
+        
+        <div class="detail-row" style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+            <span style="color: #7f8c8d;">Restaurant:</span>
+            <span style="font-weight: bold; color: #2c3e50;">{{ booking.restaurant.name }}</span>
+        </div>
+        
+        <div class="detail-row" style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+            <span style="color: #7f8c8d;">Date:</span>
+            <span style="font-weight: bold; color: #2c3e50;">{{ booking.booking_start_datetime|date:"F d, Y" }}</span>
+        </div>
+        
+        <div class="detail-row" style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+            <span style="color: #7f8c8d;">Time:</span>
+            <span style="font-weight: bold; color: #2c3e50;">{{ booking.booking_start_datetime|time:"g:i A" }} - {{ booking.booking_end_datetime|time:"g:i A" }}</span>
+        </div>
+        
+        <div class="detail-row" style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+            <span style="color: #7f8c8d;">Tables:</span>
+            <span style="font-weight: bold; color: #2c3e50;">
+                {% for table in booking.tables.all %}{{ table.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+            </span>
+        </div>
+        
+        <div class="detail-row" style="display: flex; justify-content: space-between; margin-top: 20px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
+            <span style="color: #7f8c8d; font-size: 18px;">Total Paid:</span>
+            <span style="font-weight: bold; color: #27ae60; font-size: 24px;">${{ booking.total_price }}</span>
+        </div>
+        
+        <div class="detail-row" style="display: flex; justify-content: space-between; margin-top: 15px;">
+            <span style="color: #7f8c8d;">Status:</span>
+            <span style="font-weight: bold; color: #27ae60; text-transform: uppercase;">{{ booking.payment_status }}</span>
+        </div>
+    </div>
+    
+    <div class="action-buttons" style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+        <a href="{% url 'home' %}" class="btn" style="background: #3498db; color: white; padding: 12px 30px; border-radius: 8px; text-decoration: none;">
+            <i class="fas fa-home"></i> Back to Home
+        </a>
+        <a href="{% url 'profile' %}" class="btn" style="background: #27ae60; color: white; padding: 12px 30px; border-radius: 8px; text-decoration: none;">
+            <i class="fas fa-user"></i> View My Orders
+        </a>
+        <a href="{% url 'invoice' booking.id %}" class="btn" style="background: #e74c3c; color: white; padding: 12px 30px; border-radius: 8px; text-decoration: none;" target="_blank">
+            <i class="fas fa-file-invoice"></i> View Invoice
+        </a>
+    </div>
+    
+    <p style="margin-top: 30px; color: #95a5a6; font-size: 14px;">
+        A confirmation email has been sent to your registered email address.
+    </p>
+</div>
+{% endblock %}

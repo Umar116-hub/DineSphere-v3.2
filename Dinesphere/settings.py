@@ -21,7 +21,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-xk325uki55=3967(ufq9+sigq8*=n95p$^9%q@&etzks_gcd_%'
+import os
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-xk325uki55=3967(ufq9+sigq8*=n95p$^9%q@&etzks_gcd_%')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -47,7 +48,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
+    # 'django.middleware.security.SecurityMiddleware',  # Temporarily disabled - re-enable in production
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -130,6 +131,24 @@ AUTH_USER_MODEL = 'UsersHandling.User'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = join(BASE_DIR, 'media')
 
+# MongoDB Configuration
+MONGO_URI = os.environ.get('MONGO_URI', 'mongodb://localhost:27017/')
+MONGO_DB_NAME = os.environ.get('MONGO_DB_NAME', 'DineSphere')
 
-MONGO_URI = "mongodb://localhost:27017/"
-MONGO_DB_NAME = "DineSphere"
+# Dual-DB Fallback Toggle
+# Set to True to use MongoDB for analytics/logging features
+# Falls back to SQLite if MongoDB is unavailable
+USE_MONGO = os.environ.get('USE_MONGO', 'False').lower() == 'true'
+
+# Email Configuration (Dev-only: Console backend - prints to terminal)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'bookings@dinesphere.com'
+
+# Security Settings (ENABLE in production - disable for local dev)
+SECURE_SSL_REDIRECT = False  # Redirect HTTP to HTTPS - set to True in production
+SECURE_PROXY_SSL_HEADER = None  # ('HTTP_X_FORWARDED_PROTO', 'https')
+SESSION_COOKIE_SECURE = False  # Only send cookies over HTTPS - set to True in production
+CSRF_COOKIE_SECURE = False  # Only send CSRF cookie over HTTPS - set to True in production
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'  # Prevent clickjacking
