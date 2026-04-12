@@ -189,7 +189,13 @@ def create_booking(request, Restaurant_name):
     # Fetch form data
     date_str = request.POST.get("date")  # 'YYYY-MM-DD'
     start_time_str = request.POST.get("start_time")  # 'HH:MM'
-    duration = int(request.POST.get("duration", 0))  # convert to int safely
+    try:
+        duration_val = request.POST.get("duration", "0")
+        if duration_val == "NaN" or not duration_val:
+            duration_val = "1"
+        duration = int(duration_val)
+    except ValueError:
+        duration = 1
     price = request.POST.get("price")
     table_ids = request.POST.getlist("table_ids")
 

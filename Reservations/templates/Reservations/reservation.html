@@ -591,7 +591,11 @@
             // Restore Time
             document.getElementById('startTimeBtn').value = state.start;
             // Restore Duration
-            document.getElementById('durationHrs').value = state.duration;
+            if (state.duration && !isNaN(parseInt(state.duration))) {
+                document.getElementById('durationHrs').value = state.duration;
+            } else {
+                document.getElementById('durationHrs').value = '1';
+            }
             // Restore Tables
             state.tables.forEach(t => {
                 const el = document.querySelector(`.table-item[data-id="${t.id}"]`);
@@ -707,7 +711,10 @@
         if (!date || !startTime || selectedTables.length === 0) {
             return alert("Please select Date, Time, and at least one Table.");
         }
-        const duration = parseInt(document.getElementById('durationHrs').value);
+        let duration = parseInt(document.getElementById('durationHrs').value);
+        if (isNaN(duration) || duration <= 0) {
+            duration = 1;
+        }
         let [h, m] = startTime.split(':');
         let endH = (parseInt(h) + duration).toString().padStart(2, '0');
         const endTimeStr = `${endH}:${m}`;
