@@ -289,3 +289,40 @@ td {
     cursor: pointer;
     color: #333;
 }
+/* Additional Button Styles */
+.btn-invoice {
+    text-decoration: none;
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    transition: 0.3s;
+    display: inline-block;
+}
+
+.btn-invoice:hover {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-cancel-small {
+    background: white;
+    color: #ff4d4f;
+    border: 1px solid #ff4d4f;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.btn-cancel-small:hover {
+    background: #ff4d4f;
+    color: white;
+}
+
+.badge-refunded {
+    background: rgba(23, 162, 184, 0.15);
+    color: #17a2b8;
+}

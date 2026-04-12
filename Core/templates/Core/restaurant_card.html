@@ -2,14 +2,18 @@
 <!-- {{restaurant.name}} -->
 <div style="display: block !important;" class="modern-card {% if not is_search %}carousel-item{% endif %}" 
      data-name="{{ restaurant.name }}" 
-     data-price="{{ mp }}"
+     data-price="{{ mp|floatformat:2 }}"
      data-restaurant-id="{{ restaurant.id }}"
      data-isfav="{{ restaurant.is_favourite }}"
      {% if is_search %}style="display: none;"{% endif %}
      onclick="location.href='/reservation/{{restaurant.name|space_to_value}}'">
     
     <div class="card-image-wrapper">
+        {% if restaurant.image %}
         <img src="{{ restaurant.image.url }}" alt="{{ restaurant.name }}" class="main-img">
+        {% else %}
+        <img src="https://placehold.co/400x300/111827/ffffff?text={{ restaurant.name|urlencode }}" alt="{{ restaurant.name }}" class="main-img">
+        {% endif %}
          <button class="fav-btn {% if is_favourite %} active {% endif %}" onclick="toggleFavorite(event, '{{ restaurant.id }}')">
             {% if restaurant.is_favourite %}
             <i class="fa-solid fa-heart"></i>
@@ -17,7 +21,7 @@
             <i class="fa-regular fa-heart"></i>
             {% endif %}
         </button>
-        <div class="price-badge">${{mp}}</div>
+        <div class="price-badge">${{mp|floatformat:2}}</div>
     </div>
 
     <div class="card-info">

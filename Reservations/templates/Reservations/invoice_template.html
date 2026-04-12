@@ -230,8 +230,10 @@
             <p>For any questions, contact {{ restaurant.name }} at {{ restaurant.phone }}</p>
             <p>Or email us at support@dinesphere.com</p>
             
-            <div class="no-print">
-                <button onclick="window.print()" class="download-btn">📄 Print / Save as PDF</button>
+            <div class="no-print" style="margin-top: 25px; display: flex; gap: 10px; justify-content: center;">
+                <button onclick="window.print()" class="download-btn" style="cursor: pointer;">📄 Print / Save as PDF</button>
+                <a href="/" class="download-btn" style="background: #2c3e50;">🏠 Back to Home</a>
+                <a href="/profile" class="download-btn" style="background: #27ae60;">📋 My Orders</a>
             </div>
         </div>
     </div>

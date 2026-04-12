@@ -1,5 +1,6 @@
 from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from Restaurants.models import Restaurant, FavouriteRestaurant
 from Reservations.models import Booking
@@ -63,14 +64,24 @@ def profile(request):
     user_profile = CustomerProfile.objects.filter(user=request.user).first()
     bookings = Booking.objects.filter(customer=request.user).order_by('-created_at')
     completed_booking = bookings.filter(status=Booking.STATUS_FINISHED)
+    confirmed_booking = bookings.filter(status=Booking.STATUS_CONFIRMED)
     pending_booking = bookings.filter(status=Booking.STATUS_PENDING)
     canceled_booking = bookings.filter(status=Booking.STATUS_CANCELLED)
+    
+    # Owner restaurants
+    from UsersHandling.models import RestaurantStaff
+    owner_restaurants = RestaurantStaff.objects.filter(
+        user=request.user, role='OWNER'
+    ).select_related('restaurant')
+    
     return render(request, "Core/Profile.html", {
         "user_profile": user_profile,
-        "footer":False,
-        "completed_booking": completed_booking if len(completed_booking) > 0 else None,
-        "pending_booking": pending_booking if len(pending_booking) > 0 else None,
-        "canceled_booking": canceled_booking if len(canceled_booking) > 0 else None,
+        "footer": False,
+        "completed_booking": completed_booking if completed_booking.exists() else None,
+        "confirmed_booking": confirmed_booking if confirmed_booking.exists() else None,
+        "pending_booking": pending_booking if pending_booking.exists() else None,
+        "canceled_booking": canceled_booking if canceled_booking.exists() else None,
+        "owner_restaurants": owner_restaurants,
     })
 
 @login_required

@@ -1,6 +1,7 @@
 {% extends "Core/base.html" %}
 {% load static %}
 {% load auth_tags%}
+{% load range_tags %}
 {% block links %}
 <link rel="stylesheet" href="{% static 'Core/css/profile.css' %}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -29,9 +30,12 @@
 
     <nav class="profile-tabs">
         <button class="tab-btn active" onclick="openTab(event, 'profile-info')">Profile Info</button>
-        <button class="tab-btn" onclick="openTab(event, 'pending-orders')">Pending Orders</button>
-        <button class="tab-btn" onclick="openTab(event, 'finished-orders')">Finished Orders</button>
-        <button class="tab-btn" onclick="openTab(event, 'cancelled-orders')">Cancelled Orders</button>
+        {% if request.user.role == 'CUSTOMER' %}
+        <button class="tab-btn" onclick="openTab(event, 'confirmed-orders')">Active Bookings</button>
+        <button class="tab-btn" onclick="openTab(event, 'pending-orders')">Pending</button>
+        <button class="tab-btn" onclick="openTab(event, 'finished-orders')">Completed</button>
+        <button class="tab-btn" onclick="openTab(event, 'cancelled-orders')">Cancelled</button>
+        {% endif %}
     </nav>
 
     <div class="content-wrapper">
@@ -83,6 +87,89 @@
                 </div>
                 {% endif %}
             </div>
+
+            {# --- Owner Section --- #}
+            {% if request.user.role == 'OWNER' %}
+            <h3 style="margin-top:24px;">🍽️ My Restaurants</h3>
+            <div class="info-grid">
+                {% for staff in owner_restaurants %}
+                <div class="info-item" style="flex-direction:column;align-items:flex-start;gap:6px;">
+                    <span style="font-weight:600;">{{ staff.restaurant.name }}</span>
+                    <p style="font-size:12px;opacity:0.7;">{{ staff.restaurant.city }}</p>
+                    <div style="display:flex;gap:8px;margin-top:4px;">
+                        <a href="/business/" style="font-size:12px;color:var(--ternary-color,#d88938);"><i class="fas fa-chart-line"></i> Dashboard</a>
+                        <a href="/reservation/{{ staff.restaurant.name|space_to_value }}/" style="font-size:12px;color:#3498db;"><i class="fas fa-eye"></i> View Page</a>
+                    </div>
+                </div>
+                {% empty %}
+                <p style="opacity:0.6;">No restaurants registered yet.</p>
+                {% endfor %}
+            </div>
+            <a href="/business/registration/" style="display:inline-block;margin-top:12px;padding:8px 16px;background:var(--ternary-color,#d88938);color:#fff;border-radius:6px;font-size:13px;text-decoration:none;">
+                <i class="fas fa-plus"></i> Register Another Restaurant
+            </a>
+            {% else %}
+            <div style="margin-top:24px;padding:20px;background:rgba(216,137,56,0.05);border-radius:10px;border-left:4px solid #ddd;">
+                <h4 style="margin:0 0 8px; color:#888;">🍴 Business Owner?</h4>
+                <p style="margin:0 0 12px;font-size:13px;opacity:0.8;">To list a restaurant, please create a separate **Business Account** via the <a href="/uh/auth" style="color:var(--ternary-color);">Owner Registration</a> page.</p>
+            </div>
+            {% endif %}
+        </div>
+        <div id="confirmed-orders" class="tab-content">
+            <h3>Active Bookings</h3>
+            <div class="table-container">
+                {% if not confirmed_booking %}
+                <div class="empty-state">
+                    <div class="empty-icon">✅</div>
+                    <h4>No Active Bookings</h4>
+                    <p>When you complete a booking and pay, it will appear here.</p>
+                </div>
+                {% else %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Order ID</th>
+                            <th>Restaurant</th>
+                            <th>Tables</th>
+                            <th>Booking Date</th>
+                            <th>Time</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in confirmed_booking %}
+                        <tr>
+                            <td>#{{ booking.id }}</td>
+                             <td>{{ booking.restaurant.name }}</td>
+                             <td>
+                                {% for table in booking.tables.all %}
+                                    {{ table.name }}{% if not forloop.last %}, {% endif %}
+                                {% empty %}
+                                    –
+                                {% endfor %}
+                             </td>
+                             <td>{{ booking.booking_start_datetime|date:"d M Y" }}</td>
+                             <td>{{ booking.booking_start_datetime|time:"g:i A" }} – {{ booking.booking_end_datetime|time:"g:i A" }}</td>
+                             <td>${{ booking.total_price }}</td>
+                            <td><span class="badge success">Confirmed</span></td>
+                            <td>
+                                <div style="display:flex; gap:8px;">
+                                    <a href="{% url 'view_invoice' booking.id %}" class="btn-invoice" style="text-decoration:none; color:var(--primary,#3498db); border:1px solid #3498db; padding:4px 8px; border-radius:4px; font-size:12px;">
+                                        <i class="fas fa-file-invoice"></i> Invoice
+                                    </a>
+                                    <button class="btn-cancel" onclick="confirmCancel('{{ booking.id }}')" style="border:1px solid #dc3545; padding:4px 8px; border-radius:4px; font-size:12px;">
+                                        <i class="fas fa-times-circle"></i> Cancel
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+            </div>
         </div>
         <div id="pending-orders" class="tab-content">
             <h3>Current Orders</h3>
@@ -99,22 +186,40 @@
                     <thead>
                         <tr>
                             <th>Order ID</th>
-                            <th>Date</th>
+                            <th>Restaurant</th>
+                            <th>Tables</th>
+                            <th>Booking Date</th>
+                            <th>Time</th>
                             <th>Total</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
-                            {% for booking in pending_booking %}
+                    <tbody>
+                        {% for booking in pending_booking %}
                         <tr>
-                            <td>{{ booking.id }}</td>
-                            <td>{{ booking.created_at|date:"d/m/Y" }}</td>
-                            <td>${{ booking.total_price }}</td>
+                            <td>#{{ booking.id }}</td>
+                             <td>{{ booking.restaurant.name }}</td>
+                             <td>
+                                {% for table in booking.tables.all %}
+                                    {{ table.name }}{% if not forloop.last %}, {% endif %}
+                                {% empty %}
+                                    –
+                                {% endfor %}
+                             </td>
+                             <td>{{ booking.booking_start_datetime|date:"d M Y" }}</td>
+                             <td>{{ booking.booking_start_datetime|time:"g:i A" }} – {{ booking.booking_end_datetime|time:"g:i A" }}</td>
+                             <td>${{ booking.total_price }}</td>
                             <td><span class="badge pending">Pending</span></td>
                             <td>
-                                <button class="btn-cancel" onclick="confirmCancel('{{ booking.id }}')">
-                                    <i class="fas fa-times-circle"></i> Cancel
-                                </button>
+                                <div style="display:flex; gap:8px;">
+                                    <a href="{% url 'checkout' %}" class="btn-checkout" style="text-decoration:none; color:#fff; background:var(--ternary-color,#d88938); padding:4px 8px; border-radius:4px; font-size:12px;">
+                                        <i class="fas fa-shopping-cart"></i> Checkout
+                                    </a>
+                                    <button class="btn-cancel" onclick="confirmCancel('{{ booking.id }}')" style="border:1px solid #dc3545; padding:4px 8px; border-radius:4px; font-size:12px;">
+                                        <i class="fas fa-times-circle"></i> Cancel
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -135,17 +240,32 @@
                     <thead>
                         <tr>
                             <th>Order ID</th>
-                            <th>Date</th>
+                            <th>Restaurant</th>
+                            <th>Tables</th>
+                            <th>Booking Date</th>
+                            <th>Time</th>
                             <th>Total</th>
                             <th>Status</th>
+                            <th>Invoice</th>
                         </tr>
                     </thead>
-                            {% for booking in completed_booking %}
+                    <tbody>
+                        {% for booking in completed_booking %}
                         <tr>
-                            <td>{{ booking.id }}</td>
-                            <td>{{ booking.created_at|date:"d/m/Y" }}</td>
-                            <td>${{ booking.total_price }}</td>
+                            <td>#{{ booking.id }}</td>
+                             <td>{{ booking.restaurant.name }}</td>
+                             <td>
+                                {% for table in booking.tables.all %}
+                                    {{ table.name }}{% if not forloop.last %}, {% endif %}
+                                {% empty %}
+                                    –
+                                {% endfor %}
+                             </td>
+                             <td>{{ booking.booking_start_datetime|date:"d M Y" }}</td>
+                             <td>{{ booking.booking_start_datetime|time:"g:i A" }} – {{ booking.booking_end_datetime|time:"g:i A" }}</td>
+                             <td>${{ booking.total_price }}</td>
                             <td><span class="badge success">Completed</span></td>
+                            <td><a href="{% url 'view_invoice' booking.id %}" class="btn-invoice" style="color:var(--primary,#3498db);font-size:13px;"><i class="fas fa-file-invoice"></i> Invoice</a></td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -164,17 +284,34 @@
                     <thead>
                         <tr>
                             <th>Order ID</th>
-                            <th>Date</th>
+                            <th>Restaurant</th>
+                            <th>Tables</th>
+                            <th>Booking Date</th>
                             <th>Total</th>
-                            <th>Status</th>
+                            <th>Refund Status</th>
                         </tr>
                     </thead>
-                            {% for booking in canceled_booking %}
+                    <tbody>
+                        {% for booking in canceled_booking %}
                         <tr>
-                            <td>{{ booking.id }}</td>
-                            <td>{{ booking.created_at|date:"d/m/Y" }}</td>
-                            <td>${{ booking.total_price }}</td>
-                            <td><span class="badge error">Cancelled</span></td>
+                            <td>#{{ booking.id }}</td>
+                             <td>{{ booking.restaurant.name }}</td>
+                             <td>
+                                {% for table in booking.tables.all %}
+                                    {{ table.name }}{% if not forloop.last %}, {% endif %}
+                                {% empty %}
+                                    –
+                                {% endfor %}
+                             </td>
+                             <td>{{ booking.booking_start_datetime|date:"d M Y" }}</td>
+                             <td>${{ booking.total_price }}</td>
+                            <td>
+                                {% if booking.payment_status == 'refunded' %}
+                                <span class="badge" style="background:rgba(23,162,184,0.15);color:#17a2b8;">💳 Refunded</span>
+                                {% else %}
+                                <span class="badge error">No Refund</span>
+                                {% endif %}
+                            </td>
                         </tr>
                         {% endfor %}
                     </tbody>

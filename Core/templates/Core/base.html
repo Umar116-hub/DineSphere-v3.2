@@ -16,9 +16,17 @@
 
     <title>{% block title %}{% endblock title %}</title>
 </head>
-<body style="user-select: none;">
-    
-    <!-- <header>This is header</header> -->
+    {% if messages %}
+    <div class="global-messages">
+        {% for message in messages %}
+        <div class="alert-msg {{ message.tags }}">
+            <i class="fas {% if 'error' in message.tags %}fa-exclamation-circle{% else %}fa-check-circle{% endif %}"></i>
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     {% block main %}{% endblock %}
     {% block footer %} 
     
@@ -27,8 +35,19 @@
     
     <script src="{% static 'Core/js/crousels.js' %}"></script>
     <script>
-
-</script>
+        const IS_AUTHENTICATED = {{ request.user.is_authenticated|yesno:"true,false" }};
+        
+        // Auto-dismiss messages after 5 seconds
+        setTimeout(() => {
+            const messages = document.querySelectorAll('.alert-msg');
+            messages.forEach(msg => {
+                msg.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                msg.style.opacity = '0';
+                msg.style.transform = 'translateY(-20px)';
+                setTimeout(() => msg.remove(), 500);
+            });
+        }, 5000);
+    </script>
 </body>
 
 </html>

@@ -1,6 +1,6 @@
 from .models import Restaurant
 from UsersHandling.models import RestaurantStaff
-from Restaurants.Services import isStaff
+from Restaurants.Services import isStaff, isOwner
 
 def owner_context(request):
     """

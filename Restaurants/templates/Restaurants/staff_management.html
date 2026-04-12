@@ -106,9 +106,11 @@ staff
     <div class="card-accent-bar"></div>
 
     <div class="user-avatar-wrapper">
-        <img src="{{ worker.user.image.url|default:'/static/default-avatar.png' }}" 
-             alt="{{ worker.user.username }}" 
-             class="user-main-avatar">
+        {% if worker.user.image %}
+        <img src="{{ worker.user.image.url }}" alt="{{ worker.user.username }}" class="user-main-avatar">
+        {% else %}
+        <img src="https://placehold.co/100x100/111827/ffffff?text={{ worker.user.username|slice:":1" }}" alt="{{ worker.user.username }}" class="user-main-avatar">
+        {% endif %}
         <span class="role-badge {% if worker.role == 'OWNER' %}owner-bg{% else %}staff-bg{% endif %}">
             {{ worker.role }}
         </span>

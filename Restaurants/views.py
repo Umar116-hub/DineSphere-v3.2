@@ -47,21 +47,24 @@ def registration(request):
                 ).time(),
             }
 
-            create_restaurant_for_user(request.user, data)
+            restaurant = create_restaurant_for_user(request.user, data)
 
-            messages.success(request, "Restaurant registered successfully!")
+            # Set session for immediate dashboard access
+            request.session["selected_restaurant_id"] = restaurant.id
+
+            messages.success(request, f"Restaurant '{restaurant.name}' registered successfully! Welcome to your dashboard.")
             log_event(
                 request.user.username,
                 {
                     "action": "registered_restaurant",
-                    "details": f"Registered First restaurant {data['name']}",
+                    "details": f"Registered restaurant {restaurant.name} (ID: {restaurant.id})",
                 }
             )
-            return redirect("home")
+            return redirect("analytics")
 
         except Exception as e:
-            messages.error(request, str(e))
-            return redirect("/")
+            messages.error(request, f"Registration failed: {str(e)}")
+            return redirect("restaurant_registration")
     seating_types = SeatingType.objects.all()
     if request.user.is_authenticated:
         return render(
@@ -126,9 +129,13 @@ def analytics(request, tab=None):
         return redirect("analytics")
             
 
-    staff = RestaurantStaff.objects.filter(user=request.user).first()
-    if not staff or staff.role != "OWNER":
-        return redirect("/business/staff-management/")
+    staff = RestaurantStaff.objects.filter(user=request.user, role="OWNER").first()
+    if not staff:
+        messages.error(
+            request,
+            "You need to register a restaurant to access the Business Dashboard."
+        )
+        return redirect("restaurant_registration")
     restaurants = Restaurant.objects.filter(
         restaurantstaff__in=RestaurantStaff.objects.filter(user=request.user)
     ).distinct()
@@ -148,8 +155,9 @@ def analytics(request, tab=None):
         context.update({
             'female_count': 124, # placeholders for now
             'male_count': 156,
-            'female_percent': 44,
-            'male_percent': 56,
+            'other_count': 12,
+            'female_percent': 42,
+            'male_percent': 54,
         })
     else:
         context = {}

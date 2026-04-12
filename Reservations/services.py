@@ -83,7 +83,7 @@ def lock_tables(user, restaurant, tables, date, start_time, end_time):
         if table.id not in available_ids:
             raise Exception(f"Table {table.name} just got booked!")
 
-    booking = Booking.objects.create(
+    booking = Booking(
         customer=user,
         restaurant=restaurant,
         booking_start_datetime=timezone.make_aware(datetime.combine(date, start_time)),
@@ -91,6 +91,8 @@ def lock_tables(user, restaurant, tables, date, start_time, end_time):
         locked_at=now,
         status=Booking.STATUS_PENDING
     )
+    booking.full_clean()
+    booking.save()
 
     booking.tables.set(tables)
     return booking
@@ -212,11 +214,25 @@ def create_booking(request, Restaurant_name):
         duration = 1
     end_datetime = start_datetime + timedelta(hours=duration)
 
+    # REFINEMENT: Proactively check availability before locking
+    available_tables = get_available_tables(restaurant, parse_date(date_str), parse_time(start_time_str), end_datetime.time())
+    available_ids = set(available_tables.values_list('id', flat=True))
+    
+    for tid in table_ids:
+        if int(tid) not in available_ids:
+            try:
+                t_obj = Table.objects.get(id=tid)
+                name = t_obj.name
+            except:
+                name = f"ID:{tid}"
+            raise ValueError(f"Table {name} is no longer available. Please select another table.")
+
     # Create booking
     booking = Booking.objects.create(
         restaurant=restaurant,
         booking_start_datetime=start_datetime,
         booking_end_datetime=end_datetime,
+        locked_at=timezone.now(),
         customer=request.user
     )
 
@@ -440,4 +456,55 @@ def send_booking_cancellation_email(booking):
         return True
     except Exception as e:
         print(f"Cancellation Email sending failed: {e}")
+        return False
+
+
+def notify_owner_of_cancellation(booking):
+    """
+    Notifies the restaurant owner that a customer has cancelled a booking.
+    """
+    from UsersHandling.models import RestaurantStaff
+    from django.core.mail import send_mail
+    from django.conf import settings
+    
+    # Find the owner of this restaurant
+    owner_staff = RestaurantStaff.objects.filter(
+        restaurant=booking.restaurant,
+        role='OWNER'
+    ).select_related('user').first()
+    
+    if not owner_staff or not owner_staff.user:
+        return False
+    
+    owner = owner_staff.user
+    subject = f"[DineSphere] Booking Cancelled — {booking.restaurant.name}"
+    
+    message = f"""
+    Dear {owner.username},
+
+    A reservation at {booking.restaurant.name} has been cancelled by the customer.
+
+    Cancellation Details:
+    Customer: {booking.customer.username} ({booking.customer.email})
+    Booking Date: {booking.booking_start_datetime.strftime('%B %d, %Y')}
+    Time: {booking.booking_start_datetime.strftime('%I:%M %p')} - {booking.booking_end_datetime.strftime('%I:%M %p')}
+    Table(s): {', '.join([t.name for t in booking.tables.all()])}
+    Amount Refunded to Customer: ${booking.total_price}
+
+    Booking Reference: #{booking.id}
+
+    This table slot is now available again for new bookings.
+    """
+    
+    try:
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@dinesphere.com'),
+            recipient_list=[owner.email],
+            fail_silently=True,
+        )
+        return True
+    except Exception as e:
+        print(f"Owner notification email failed: {e}")
         return False

@@ -10,7 +10,8 @@ class User(AbstractUser):
 
     ROLE_CHOICES = [
         ('CUSTOMER', 'Customer'),
-        ('OWNER', 'Owner')
+        ('OWNER', 'Owner'),
+        ('STAFF', 'Staff')
     ]
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)
     image = models.ImageField(upload_to='UsersHandling/media/images/', blank=True, null=True)

@@ -37,14 +37,12 @@ def create_restaurant(data):
 
 
 def create_restaurant_for_user(user, data):
-    # Step 1: Create restaurant
-    restaurant = create_restaurant(data)
+    # Step 1: Strict Check - only existing Owners can register restaurants
+    if user.role != 'OWNER':
+        raise ValueError("Only dedicated Owner accounts can register restaurants. Please create an Owner account.")
 
-    # Step 2: Check if user already owner
-    is_already_owner = RestaurantStaff.objects.filter(
-        user=user,
-        role="OWNER"
-    ).exists()
+    # Step 2: Create restaurant
+    restaurant = create_restaurant(data)
 
     # Step 3: Assign ownership
     RestaurantStaff.objects.create(
@@ -53,11 +51,6 @@ def create_restaurant_for_user(user, data):
         role="OWNER"
     )
 
-    # Step 4: Upgrade only if first time
-    if not is_already_owner:
-        user.role = "OWNER"
-        user.save()
-    
     return restaurant
 
 
@@ -242,10 +235,10 @@ def getAnalytics(restaurant_id):
         booking_start_datetime__gte=today
     ).count()
     
-    # Average party size
-    avg_guests = confirmed_bookings.aggregate(
-        avg=Avg('guest_count')
-    )['avg'] or 0
+    # Average party size - calculated in Python because guest_count is a property
+    # We take all confirmed bookings and average their guest_count property
+    all_guest_counts = [b.guest_count for b in confirmed_bookings]
+    avg_guests = sum(all_guest_counts) / len(all_guest_counts) if all_guest_counts else 0
     
     # Real staff count
     staff_count = RestaurantStaff.objects.filter(
@@ -254,9 +247,10 @@ def getAnalytics(restaurant_id):
     
     # Order status breakdown
     order_stats = Booking.objects.filter(restaurant_id=restaurant_id).aggregate(
-        pending_count=Count('id', filter=Q(status='pending')),
-        confirmed_count=Count('id', filter=Q(status='confirmed')),
-        cancelled_count=Count('id', filter=Q(status='cancelled')),
+        pending_count=Count('id', filter=Q(status=Booking.STATUS_PENDING)),
+        confirmed_count=Count('id', filter=Q(status=Booking.STATUS_CONFIRMED)),
+        finished_count=Count('id', filter=Q(status=Booking.STATUS_FINISHED)),
+        cancelled_count=Count('id', filter=Q(status=Booking.STATUS_CANCELLED)),
         total_bookings=Count('id')
     )
     
@@ -271,7 +265,7 @@ def getAnalytics(restaurant_id):
         'staff_count': staff_count,
         'stats': order_stats,
         # Remove fake demographics - use real data only
-        'total_customers': confirmed_bookings.values('user').distinct().count(),
+        'total_customers': confirmed_bookings.values('customer').distinct().count(),
     }
 
 

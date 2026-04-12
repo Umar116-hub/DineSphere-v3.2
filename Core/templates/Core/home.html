@@ -40,7 +40,7 @@
                     {% csrf_token %}
                     <button type="button" id="openLogoutModal" style="background: none; border: none;">
 
-                        {% if request.user.image.url %}
+                        {% if request.user.image %}
                         <img src="{{ request.user.image.url }}" alt="{{ request.user.username }} profile picture"
                             style="width: 40px; height: 40px; border-radius: 50%; border: 1px solid white; object-fit: cover;">
                         {% else %}
@@ -70,6 +70,14 @@
         </nav>
         <div class="hero-textbox">
             <div class="hero-wrapper">
+                {% if request.user.role == 'OWNER' %}
+                <h1>Welcome Back, <span style="color: var(--ternary-color);">Owner</span></h1>
+                <div style="margin-bottom: 25px;">Manage your reservations, view analytics, and grow your business from the dashboard.</div>
+                <div style="display: flex; gap: 1rem;">
+                    <a href="/business/" class="feature-btn" style="text-decoration: none; padding: 12px 24px;">Open Business Dashboard</a>
+                    <a href="/profile" class="feature-btn" style="text-decoration: none; padding: 12px 24px; background: transparent; border: 1px solid var(--secondary-color);">Manage Profile</a>
+                </div>
+                {% else %}
                 <h1>Welcome to Dine<span style="color: var(--ternary-color);">Sphere</span></h1>
                 <div>Dineshpere is a modern dining and restaurant discovery platform designed to make eating out
                     effortless, exciting, and memorable. It bridges the gap between foodies and restaurants, ensuring a
@@ -88,6 +96,7 @@
                     <button class="search-btn" type="submit">SEARCH</button>
                 </form>
                 <!-- </div> -->
+                {% endif %}
             </div>
         </div>
     </div>
@@ -121,6 +130,7 @@
     </div>
 </section>
     {% else %}
+    {% if request.user.role != 'OWNER' %}
     <section id="main-page" style="padding-top: 50px;">
         <div class="carousels">
 
@@ -130,9 +140,7 @@
                 <div class="carousel-container">
                     <div class="carousel-track" id="fav-track">
                         {% for restaurant, review, mp in favorite_combined %}
-
-                        {% include "Core/restaurant_card.html" with restaurant=restaurant review=review mp=mp
-                        is_favourite=True %}
+                            {% include "Core/restaurant_card.html" with restaurant=restaurant review=review mp=mp is_favourite=True %}
                         {% empty %}
                         <div style="text-align: center; padding: 20px; color: #666;">
                             <p>No favourite restaurants yet. Add some by clicking the heart icon!</p>
@@ -177,6 +185,7 @@
         </div>
     </section>
     {% endif %}
+    {% endif %}
     <section class="feature-section">
         <div class="feature-container">
             <div class="feature-image-block">
@@ -189,11 +198,14 @@
                         <div class="user-list">
                             {% for user in three_users %}
                             <div class="user-item">
+                                <div class="testimonial-header">
                                 {% if user.user.image %}
                                 <img src="{{user.user.image.url}}" alt="User">
                                 {% else %}
-                                <img src="{{user.user}}" alt="User">
+                                <img src="https://placehold.co/60x60/008000/ffffff?text={{ user.user.username|slice:":1" }}" alt="User">
                                 {% endif %}
+                                <span class="testimonial-name">{{user.user.username}}</span>
+                            </div>
                                 <div>
                                     <p class="user-name">{{user.user.username}}</p>
                                     <p class="user-role"></p>
@@ -218,17 +230,17 @@
                 <button class="feature-btn" onclick="window.location.href='/business/registration'">
                     Register
                 </button>
-                {% elif request.user|is_owner %}
+                {% elif request.user.role == 'OWNER' %}
                 <button class="feature-btn" onclick="window.location.href='/business/'">
-                    View my business
+                    View My Business
                 </button>
-                {% elif request.user|is_staff %}
+                {% elif request.user.role == 'STAFF' %}
                 <button class="feature-btn" onclick="window.location.href='/business/reservations/'">
                     See Today's Work
                 </button>
                 {% else %}
-                <button class="feature-btn" onclick="window.location.href='/business/'">
-                    Register
+                <button class="feature-btn" onclick="window.location.href='/business/registration'">
+                    Register Business
                 </button>
                 {% endif %}
             </div>
@@ -240,8 +252,14 @@
     <div class="mobile-menu-inner">
         <ul>
             <li><a href="/">Home</a></li>
-            <li><a href="/">About</a></li>
-            <li><a href="/business/registration"">Register</a></li>
+            <li><a href="/#who">About</a></li>
+            {% if request.user.is_authenticated and request.user.role == 'OWNER' %}
+            <li><a href="/business">Business Dashboard</a></li>
+            {% elif request.user.is_authenticated and request.user.role == 'STAFF' %}
+            <li><a href="/business">Staff Dashboard</a></li>
+            {% else %}
+            <li><a href="/business/registration">Register Business</a></li>
+            {% endif %}
             <li><a href="/profile">Profile</a></li>
             {% if request.user.is_authenticated %}
             <li><a href="{% url 'logout' %}">Logout</a></li>

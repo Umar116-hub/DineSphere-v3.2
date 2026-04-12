@@ -70,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.status === 'success') {
                 // If your backend handles the full page data update, 
                 // you might want to reload here:
-                // window.location.reload(); 
+                window.location.reload(); 
                 console.log("Switched!");
             }
         });

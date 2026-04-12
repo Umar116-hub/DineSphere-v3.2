@@ -8,8 +8,14 @@ from django.db.models import Sum
 from django.db import transaction
 from .models import Booking
 from Restaurants.models import Restaurant, Table, Review
-from .services import view_all_booking, create_booking, generate_invoice_html, send_booking_confirmation_email, send_booking_cancellation_email
+from .services import (
+    view_all_booking, create_booking, generate_invoice_html,
+    send_booking_confirmation_email, send_booking_cancellation_email,
+    notify_owner_of_cancellation
+)
+from Core.decorators import customer_required
 
+@customer_required
 def booking_view(request, Restaurant_name):
     """
     Handles restaurant table reservations.
@@ -40,12 +46,16 @@ def booking_view(request, Restaurant_name):
         return render(request, "Reservations/reservation.html", booking_data)
 
     elif request.method == "POST":
-        context = create_booking(request, Restaurant_name)
-        return render(request, "Reservations/checkout.html", context)
+        try:
+            context = create_booking(request, Restaurant_name)
+            return render(request, "Reservations/checkout.html", context)
+        except ValueError as e:
+            messages.error(request, str(e))
+            return redirect("booking", Restaurant_name=Restaurant_name.replace(" ", "_"))
 
 
 
-@login_required
+@customer_required
 def checkout_view(request):
     if request.method == "POST":
         return placeOrder_view(request)
@@ -73,7 +83,7 @@ def checkout_view(request):
 
 
 
-@login_required
+@customer_required
 @transaction.atomic
 def placeOrder_view(request):
     """
@@ -88,36 +98,21 @@ def placeOrder_view(request):
         return redirect("checkout")
     
     # Get the latest pending booking for this user
-    # The booking was created when user clicked "Reserve & Lock" on reservation page
     booking = Booking.objects.select_for_update().filter(
         customer=request.user,
         status=Booking.STATUS_PENDING
     ).order_by('-created_at').first()
     
     if not booking:
-        messages.error(request, "No pending booking found. Please create a booking first.")
+        messages.error(request, "Your booking session has expired. Please try reserving again.")
         return redirect("home")
     
     # Get tables associated with this booking
     tables = list(booking.tables.all())
     
     if not tables:
-        messages.error(request, "No tables selected for this booking.")
-        return redirect("home")
-    
-    # Verify tables are still available (double-check inside transaction)
-    for table in tables:
-        overlapping = Booking.objects.filter(
-            tables=table,
-            status=Booking.STATUS_CONFIRMED,
-            booking_start_datetime__lt=booking.booking_end_datetime,
-            booking_end_datetime__gt=booking.booking_start_datetime
-        ).exclude(id=booking.id).exists()
-        
-        if overlapping:
-            messages.error(request, f"Table {table.name} is no longer available. Please select different tables.")
-            booking.delete()
-            return redirect("home")
+        messages.error(request, "It looks like no tables were selected. Please try the reservation process again.")
+        return redirect("checkout")
     
     # Process payment (mock validation)
     card_number = request.POST.get("cn", "").replace(" ", "")
@@ -135,10 +130,6 @@ def placeOrder_view(request):
     
     messages.success(request, "Booking confirmed successfully!")
     return redirect("order_success", booking_id=booking.id)
-        
-    # We no longer broadly catch Exception here. 
-    # If a generic server or code logic error occurs, it should 500 loudly 
-    # so we can track and fix it, rather than silently redirecting.
 
 
 @login_required
@@ -247,9 +238,19 @@ def cancel_booking_view(request, booking_id):
         booking.payment_status = Booking.PAYMENT_STATUS_REFUNDED
     booking.save()
     
-    # Fire refund email mock if they actually paid
-    if booking.payment_status == Booking.PAYMENT_STATUS_REFUNDED:
-        send_booking_cancellation_email(booking)
+    # Send customer cancellation email
+    send_booking_cancellation_email(booking)
+    
+    # Notify the restaurant owner
+    notify_owner_of_cancellation(booking)
 
-    messages.success(request, f'Order #{booking.id} has been cancelled successfully.')
+    if booking.payment_status == Booking.PAYMENT_STATUS_REFUNDED:
+        messages.success(
+            request,
+            f'Booking #{booking.id} at {booking.restaurant.name} has been cancelled. '
+            f'A refund of ${booking.total_price} is being processed — please check your email for details.'
+        )
+    else:
+        messages.success(request, f'Booking #{booking.id} has been cancelled successfully.')
+    
     return redirect('profile')

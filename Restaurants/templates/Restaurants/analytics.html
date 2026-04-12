@@ -1,13 +1,23 @@
 {% extends "Restaurants/base.html" %}
 {% load static %}
 {% load auth_tags %}
-{% block title %} Analytics {% endblock %}
-{% block name %} Analytics {% endblock %}
+{% block title %} 
+    {% if active_dynamic_tab == 'seatingtype' %} Seating Type
+    {% elif active_dynamic_tab == 'tablesize' %} Table Size
+    {% else %} Analytics
+    {% endif %}
+{% endblock %}
+{% block name %} 
+    {% if active_dynamic_tab == 'seatingtype' %} Seating Type
+    {% elif active_dynamic_tab == 'tablesize' %} Table Size
+    {% else %} Analytics
+    {% endif %}
+{% endblock %}
 {% block styles %}
 <link rel="stylesheet" href="{% static 'Restaurants/css/analytics.css' %}">
 {% endblock %}
 {% block content %}
-<div class="main-grid">
+<div class="main-grid {% if active_dynamic_tab %}isolated{% endif %}">
 
     {% if restaurant_approval_status %}
     <div class="approval-notification {% if restaurant_approval_status.is_approved %}approved{% else %}pending{% endif %}"
@@ -21,6 +31,7 @@
     </div>
     {% endif %}
 
+    {% if not active_dynamic_tab %}
     <div class="card total-likes-card">
         <div class="card-header">
             <span class="card-title">Total Revenue</span>
@@ -49,69 +60,10 @@
             </div>
         </div>
     </div>
+    {% endif %}
 
-    <div class="card pending-messages-card">
-        <div class="card-header">
-            <span class="card-title">Demographics</span>
-            <i class="fas fa-ellipsis-h card-options"></i>
-        </div>
-        <div class="card-large-value">{{ total_customers }}</div>
+    <!-- Demographics Section Removed Globally per user request -->
 
-        <div class="demographics">
-            <div class="demographic-item">
-                <div class="circular-chart-container">
-                    <svg viewBox="0 0 36 36" class="circular-chart teal">
-                        <path class="circle-bg" stroke="#f0f0f0" stroke-width="2" fill="none" d="M18 2.0845
-                    a 15.9155 15.9155 0 0 1 0 31.831
-                    a 15.9155 15.9155 0 0 1 0 -31.831" />
-
-                        <path class="circle" stroke="#10b981" stroke-width="2"
-                            stroke-dasharray="{{ female_percent }}, 100" fill="none" d="M18 2.0845
-                    a 15.9155 15.9155 0 0 1 0 31.831
-                    a 15.9155 15.9155 0 0 1 0 -31.831" />
-                    </svg>
-                    <div class="ternary-icon"
-                        style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); color: var(--ternary-color);">
-                        <i class="fas fa-users fa-2x"></i>
-                    </div>
-                </div>
-            </div>
-
-            <div class="demographic-item" style="flex-grow:1; margin-left:20px;">
-                <div class="pending-messages-list">
-                    <div class="message-item">
-                        <div class="message-label-group">
-                            <div class="message-dot female"></div>
-                            <div class="message-info">
-                                <div class="label">Female ({{ female_count }})</div>
-                                <div class="value">{{ female_percent }}%</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="message-item">
-                        <div class="message-label-group">
-                            <div class="message-dot male"></div>
-                            <div class="message-info">
-                                <div class="label">Male ({{ male_count }})</div>
-                                <div class="value">{{ male_percent }}%</div>
-                            </div>
-                        </div>
-                    </div>
-                    {% if other_count > 0 %}
-                    <div class="message-item">
-                        <div class="message-label-group">
-                            <div class="message-dot" style="background: var(--ternary-color);"></div>
-                            <div class="message-info">
-                                <div class="label">Other</div>
-                                <div class="value">{{ other_count }}</div>
-                            </div>
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- <div class="card post-stats-card">
         <div class="stats-top-half">
@@ -185,8 +137,10 @@
 
     <div class="card post-activity-section">
         <div class="table-tabs">
-            <div class="table-tab {% if not active_dynamic_tab %}active{% endif %}" onclick="switchTab('logs', this)">Logs</div>
+            {% if not active_dynamic_tab %}
+            <div class="table-tab active" onclick="switchTab('logs', this)">Logs</div>
             <div class="table-tab" onclick="switchTab('configs', this)">Configs</div>
+            {% endif %}
             {% if active_dynamic_tab %}
             <div id="dynamic-tab-header" class="table-tab {% if active_dynamic_tab %}active{% endif %}" onclick="switchTab('dynamic', this)"
                 style="display: flex; align-items: center; gap: 10px;">
@@ -200,7 +154,13 @@
         <div id="tab-logs" class="tab-content {% if not active_dynamic_tab %}active{% endif %}">
             <div class="post-table">
                 <div class="post-table-row">
-                    <div class="table-img"><img src="{{ CP__OwnerProfile.image.url }}" alt=""></div>
+                    <div class="table-img">
+                        {% if CP__OwnerProfile.image %}
+                        <img src="{{ CP__OwnerProfile.image.url }}" alt="">
+                        {% else %}
+                        <img src="https://placehold.co/60x60/d1d5db/111827?text={{ CP__OwnerProfile.username|slice:':1' }}" alt="">
+                        {% endif %}
+                    </div>
                     <div class="table-post-info-cell">
                         <div class="table-post-title">{{ CP__OwnerProfile}}</div>
                         <div class="table-post-sub"></div>
@@ -219,7 +179,13 @@
                 </div>
                 {% for staff in all_staff %}
                 <div class="post-table-row">
-                    <div class="table-img"><img src="{{ staff.user.image.url }}" alt=""></div>
+                    <div class="table-img">
+                        {% if staff.user.image %}
+                        <img src="{{ staff.user.image.url }}" alt="">
+                        {% else %}
+                        <img src="https://placehold.co/60x60/d1d5db/111827?text={{ staff.user.username|slice:':1' }}" alt="">
+                        {% endif %}
+                    </div>
                     <div class="table-post-info-cell">
                         <div class="table-post-title">{{ staff.user.username}}</div>
                         <div class="table-post-sub"></div>

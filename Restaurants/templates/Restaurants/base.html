@@ -57,7 +57,11 @@
         <div class="sidebar-bottom">
             <div class="nav-item" id="dashboard-logout"><i class="fas fa-sign-out-alt"></i></div>
             <div class="profile-pic">
+                {% if CP__OwnerProfile.image %}
                 <img src="{{CP__OwnerProfile.image.url}}" alt="Profile Picture">
+                {% else %}
+                <img src="https://placehold.co/100x100/111827/ffffff?text={{ CP__OwnerProfile.username|slice:":1" }}" alt="Profile Picture">
+                {% endif %}
             </div>
         </div>
     </div>
@@ -178,7 +182,7 @@
     </div>
 </div>
 </body>
-<script src="{% static 'Restaurants/js/base.js' %}"></script>
+<script src="{% static 'Restaurants/js/base.js' %}?v=1.1"></script>
 {% block scripts %}
 {% endblock %}
 

@@ -55,6 +55,11 @@ class Booking(models.Model):
         return f"{self.restaurant.name} - {self.booking_start_datetime} to {self.booking_end_datetime}"
 
 
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.customer and self.customer.role != 'CUSTOMER':
+            raise ValidationError("Only customer accounts can make reservations.")
+
     def cancel(self):
         if self.status == self.STATUS_PENDING:
             self.status = self.STATUS_CANCELLED
