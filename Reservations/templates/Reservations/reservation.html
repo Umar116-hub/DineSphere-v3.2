@@ -164,7 +164,46 @@
         margin: 15px 0;
         font-weight: 600;
     }
+
+    /* Auth Modal Styling */
+    .auth-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.85);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        backdrop-filter: blur(8px);
+    }
+
+    .auth-modal-overlay.active {
+        display: flex;
+    }
+
+    .auth-modal-content {
+        position: relative;
+        animation: slideUp 0.4s ease-out;
+    }
+
+    @keyframes slideUp {
+        from { transform: translateY(50px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+
+    .close-modal {
+        position: absolute;
+        right: -40px;
+        top: 0;
+        color: white;
+        font-size: 2rem;
+        cursor: pointer;
+    }
 </style>
+<link rel="stylesheet" href="{% static 'UsersHandling/css/auth.css' %}">
 {% endblock %}
 
 {% block main %}
@@ -192,32 +231,7 @@
                 <span>Start Hour</span>
                 <select id="startTimeBtn" style="border:none; font-weight:bold; width:100%; background-color: transparent;">
                     <option value="">Select Time</option>
-                    {% for time_slot in time_slots %}
-                        <option value="{{ time_slot }}">{{ time_slot }}</option>
-                    {% empty %}
-                        <option value="12:00">12:00 PM</option>
-                        <option value="12:30">12:30 PM</option>
-                        <option value="13:00">1:00 PM</option>
-                        <option value="13:30">1:30 PM</option>
-                        <option value="14:00">2:00 PM</option>
-                        <option value="14:30">2:30 PM</option>
-                        <option value="15:00">3:00 PM</option>
-                        <option value="15:30">3:30 PM</option>
-                        <option value="16:00">4:00 PM</option>
-                        <option value="16:30">4:30 PM</option>
-                        <option value="17:00">5:00 PM</option>
-                        <option value="17:30">5:30 PM</option>
-                        <option value="18:00">6:00 PM</option>
-                        <option value="18:30">6:30 PM</option>
-                        <option value="19:00">7:00 PM</option>
-                        <option value="19:30">7:30 PM</option>
-                        <option value="20:00">8:00 PM</option>
-                        <option value="21:00">9:00 PM</option>
-                        <option value="21:30">9:30 PM</option>
-                        <option value="22:00">10:00 PM</option>
-                        <option value="22:30">10:30 PM</option>
-                        <option value="23:00">11:00 PM</option>
-                    {% endfor %}
+                    <!-- Options populated via JS -->
                 </select>
             </div>
             <div class="input-rect">
@@ -303,16 +317,12 @@
             <span id="sum-total">$0.00</span>
         </div>
         <p style="font-size: 0.8rem; color: #888; margin-bottom: 20px;">* Includes 5-minute table lock guarantee</p>
-        <button class="reserve-lock-btn"
-            style="width: 100%; background: #111827; color: white; padding: 18px; border-radius: 10px; font-weight: bold; border: none; cursor: pointer;"
-            {% if request.user.is_authenticated %}
-            onclick="submitReservation()"
-            {% else %}
-            onclick="window.location.href='/uh/auth'"
-            {% endif %}
-            >
-            RESERVE AND LOCK
-        </button>
+            <button class="reserve-lock-btn"
+                style="width: 100%; background: #111827; color: white; padding: 18px; border-radius: 10px; font-weight: bold; border: none; cursor: pointer;"
+                onclick="handleReserveClick()"
+                >
+                RESERVE AND LOCK
+            </button>
     </div>
 
     <div class="section-card bottom-left">
@@ -353,6 +363,74 @@
 
 </div>
 
+<!-- Auth Modal (Paywall) -->
+<div class="auth-modal-overlay" id="authModal">
+    <div class="auth-modal-content">
+        <span class="close-modal" onclick="closeAuthModal()">&times;</span>
+        <div class="auth-container">
+            <div class="logo-header">
+                <h1>Dine<span style="color: var(--ternary-color);">Sphere</span></h1>
+                <p>Login to confirm your booking</p>
+            </div>
+            <div class="auth-toggle-buttons">
+                <button id="login-btn-modal" class="toggle-btn active" onclick="switchAuthMode('login')">LOGIN</button>
+                <button id="signup-btn-modal" class="toggle-btn" onclick="switchAuthMode('signup')">SIGNUP</button>
+            </div>
+            <div class="form-card">
+                <div class="form-slider-viewport">
+                    <div class="form-slider" id="modalSlider">
+                        <!-- Login Form -->
+                        <form id="login-form-modal" class="auth-form" method="post" action="/uh/login/?next={{ request.get_full_path }}">
+                            {% csrf_token %}
+                            <div class="input-group">
+                                <i class="fas fa-user"></i>
+                                <input type="text" name="username" placeholder="Username" required>
+                            </div>
+                            <div class="input-group">
+                                <i class="fas fa-lock"></i>
+                                <input type="password" name="password" placeholder="********" required>
+                            </div>
+                            <button type="submit" class="submit-btn" onclick="saveBookingState()">LOGIN & CONTINUE</button>
+                        </form>
+                        <!-- Signup Form -->
+                        <form id="signup-form-modal" class="auth-form" method="post" action="/uh/signup/?next={{ request.get_full_path }}" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <div class="input-group">
+                                <i class="fas fa-envelope"></i>
+                                <input type="email" name="email" placeholder="Email Address" required>
+                            </div>
+                            <div class="input-group">
+                                <i class="fas fa-user-plus"></i>
+                                <input type="text" name="username" placeholder="Desired Username" required>
+                            </div>
+                            <div class="input-row">
+                                <div class="input-group">
+                                    <i class="fas fa-venus-mars"></i>
+                                    <select name="gender" required>
+                                        <option value="" disabled selected>Gender</option>
+                                        <option value="male">Male</option>
+                                        <option value="female">Female</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="input-group">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <input type="date" name="dob" required>
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <i class="fas fa-lock"></i>
+                                <input type="password" name="password" placeholder="Create Password" required>
+                            </div>
+                            <button type="submit" class="submit-btn" onclick="saveBookingState()">SIGNUP & CONTINUE</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <form id="finalForm" action="." method="POST" style="display:none;">
     {% csrf_token %}
     <input type="hidden" name="date" id="form-date">
@@ -367,7 +445,106 @@
 <script src="{% static 'Reservations/js/reservation.js' %}"></script>
 <script>
     const restaurantName = "{{ restaurant.name|escapejs }}".replace(/ /g, "_");
-    // Tabbed Navigation Logic
+    const isAuthenticated = {% if request.user.is_authenticated %}true{% else %}false{% endif %};
+    const openingTime = "{{ restaurant.opening_hour|time:'H:i' }}";
+    const closingTime = "{{ restaurant.closing_hour|time:'H:i' }}";
+
+    // Dynamic Time Slot Generation
+    function generateTimeSlots() {
+        const select = document.getElementById('startTimeBtn');
+        const [openH, openM] = openingTime.split(':').map(Number);
+        const [closeH, closeM] = closingTime.split(':').map(Number);
+        
+        let currentH = openH;
+        let currentM = openM;
+
+        while (currentH < closeH || (currentH === closeH && currentM <= closeM)) {
+            const timeStr = `${String(currentH).padStart(2, '0')}:${String(currentM).padStart(2, '0')}`;
+            const label = formatAMPM(currentH, currentM);
+            const opt = new Option(label, timeStr);
+            select.add(opt);
+
+            currentM += 30;
+            if (currentM >= 60) {
+                currentM = 0;
+                currentH++;
+            }
+        }
+    }
+
+    function formatAMPM(hours, minutes) {
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const h = hours % 12 || 12;
+        const m = String(minutes).padStart(2, '0');
+        return `${h}:${m} ${ampm}`;
+    }
+
+    // Modal & Auth Logic
+    function handleReserveClick() {
+        if (isAuthenticated) {
+            submitReservation();
+        } else {
+            document.getElementById('authModal').classList.add('active');
+        }
+    }
+
+    function closeAuthModal() {
+        document.getElementById('authModal').classList.remove('active');
+    }
+
+    function switchAuthMode(mode) {
+        const slider = document.getElementById('modalSlider');
+        const loginBtn = document.getElementById('login-btn-modal');
+        const signupBtn = document.getElementById('signup-btn-modal');
+        
+        if (mode === 'login') {
+            slider.style.transform = 'translateY(0)';
+            loginBtn.classList.add('active');
+            signupBtn.classList.remove('active');
+        } else {
+            slider.style.transform = `translateY(-${document.getElementById('login-form-modal').offsetHeight}px)`;
+            signupBtn.classList.add('active');
+            loginBtn.classList.remove('active');
+        }
+    }
+
+    // Persistence Logic
+    function saveBookingState() {
+        const state = {
+            date: document.getElementById('dateBtn').innerText,
+            start: document.getElementById('startTimeBtn').value,
+            duration: document.getElementById('durationHrs').value,
+            tables: selectedTables
+        };
+        localStorage.setItem('pending_booking', JSON.stringify(state));
+    }
+
+    function restoreBookingState() {
+        const saved = localStorage.getItem('pending_booking');
+        if (saved) {
+            const state = JSON.parse(saved);
+            // Verify it's for this restaurant (could add restaurant name to state)
+            
+            // Restore Date
+            if (state.date && state.date !== 'Select Date') {
+                document.getElementById('dateBtn').innerText = state.date;
+                document.getElementById('form-date').value = state.date;
+            }
+            // Restore Time
+            document.getElementById('startTimeBtn').value = state.start;
+            // Restore Duration
+            document.getElementById('durationHrs').value = state.duration;
+            // Restore Tables
+            state.tables.forEach(t => {
+                const el = document.querySelector(`.table-item[data-id="${t.id}"]`);
+                if (el) toggleTableSelection(el);
+            });
+
+            localStorage.removeItem('pending_booking'); // Clear after restore
+        }
+    }
+
+    // Existing UI Logic
     function openSeating(evt, seatingId) {
         var i, content, navlinks;
         content = document.getElementsByClassName("seating-content");
@@ -382,42 +559,28 @@
         evt.currentTarget.classList.add("active");
     }
 
-    // 1. Initialize Date Picker
+    // Initialize
     flatpickr("#dateBtn", {
-    minDate: "today",
-    onChange: function (selectedDates, dateStr) {
-        document.getElementById('dateBtn').innerText = dateStr;
-        document.getElementById('form-date').value = dateStr;
-
-        // 🔥 Fetch unavailable tables
-        fetch(`../get-unavailable-tables/?date=${dateStr}&restaurant=${restaurantName}`)
-            .then(response => response.json())
-            .then(data => {
-                const bookedTables = data.booked_tables;
-
-                // Hide or disable tables
-                document.querySelectorAll(".table-item").forEach(table => {
-                    const tableId = parseInt(table.dataset.id);
-
-                    if (bookedTables.includes(tableId)) {
-                        table.style.display = "none";  // hide
-                        // OR:
-                        // table.classList.add("disabled");
-                    } else {
-                        table.style.display = "block"; // show again
-                    }
+        minDate: "today",
+        onChange: function (selectedDates, dateStr) {
+            document.getElementById('dateBtn').innerText = dateStr;
+            document.getElementById('form-date').value = dateStr;
+            fetch(`../get-unavailable-tables/?date=${dateStr}&restaurant=${restaurantName}`)
+                .then(response => response.json())
+                .then(data => {
+                    const bookedTables = data.booked_tables;
+                    document.querySelectorAll(".table-item").forEach(table => {
+                        const tableId = parseInt(table.dataset.id);
+                        table.style.display = bookedTables.includes(tableId) ? "none" : "block";
+                    });
                 });
-            });
-    }
-});
+        }
+    });
 
-    // 2. Table Selection Logic
     let selectedTables = [];
-
     function toggleTableSelection(el) {
         el.classList.toggle('selected');
         const tableId = el.dataset.id;
-
         if (el.classList.contains('selected')) {
             selectedTables.push({
                 id: tableId,
@@ -437,124 +600,73 @@
             totalHourly += t.price;
             totalCap += t.cap;
         });
-
         const hours = parseInt(document.getElementById('durationHrs').value);
         const finalTotal = totalHourly * hours;
-
         document.getElementById('sum-cap').innerText = totalCap;
         document.getElementById('sum-hourly').innerText = "$" + totalHourly.toFixed(2);
         document.getElementById('sum-total').innerText = "$" + finalTotal.toFixed(2);
         document.getElementById('form-cap').value = totalCap;
     }
 
-    // 3. Star Rating Logic
-    const stars = document.querySelectorAll('#star-container i');
-    stars.forEach(star => {
-        star.addEventListener('click', function () {
-            const val = this.dataset.value;
-            document.getElementById('selected-rating').value = val;
-            stars.forEach(s => {
-                s.classList.toggle('active', s.dataset.value <= val);
-            });
-        });
-    });
-
-    // function submitReview() {
-    //     const rating = document.getElementById('selected-rating').value;
-    //     const text = document.getElementById('reviewText').value;
-    //     if (rating == 0) return alert("Please select a star rating");
-    //     alert("Review Submitted! (Rating: " + rating + ")");
-    // }
     document.addEventListener("DOMContentLoaded", function () {
+        generateTimeSlots();
+        restoreBookingState();
         initTestimonialCarousel();
+        
         const submitBtn = document.getElementById("submitReviewBtn");
-
         if (submitBtn) {
             submitBtn.addEventListener("click", function () {
                 const rating = document.getElementById("selected-rating").value;
                 const text = document.getElementById("reviewText").value;
-
                 if (rating == 0) return alert("Please select a star rating");
-
-                // Build POST data
+                
                 const formData = new FormData();
                 formData.append("rating", rating);
                 formData.append("text", text);
-
-
-                // Get CSRF token from cookie or hidden input
                 const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
                 fetch(`/reservation/{{restaurant.name|space_to_value:"_"}}/postReview/`, {
                     method: "POST",
-                    headers: {
-                        "X-CSRFToken": csrftoken
-                    },
+                    headers: { "X-CSRFToken": csrftoken },
                     body: formData
                 })
-                    .then(response => {
-                        if (!response.ok) throw new Error("Network response was not OK");
-                        return response.json();
-                    })
-                    .then(data => {
-                        console.log(data);
-
-                        if (data.success) {
-                            alert("Review submitted successfully!");
-                            // Optionally clear form
-                            document.getElementById("reviewText").value = "";
-                            document.getElementById("selected-rating").value = 0;
-                            // Optionally update the UI dynamically with new review
-                        } else {
-                            alert("Error: " + (data.error || "Unable to submit review"));
-                        }
-                    })
-                    .catch(error => {
-                        console.error("Error:", error);
-                        alert("Something went wrong while submitting review");
-                    });
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("Review submitted!");
+                        document.getElementById("reviewText").value = "";
+                        document.getElementById("selected-rating").value = 0;
+                    } else alert("Error: " + data.error);
+                })
+                .catch(() => alert("Something went wrong"));
             });
         }
     });
 
-    // 4. Submit Reservation
     function submitReservation() {
         const startTime = document.getElementById('startTimeBtn').value;
         const date = document.getElementById('form-date').value;
-
         if (!date || !startTime || selectedTables.length === 0) {
             return alert("Please select Date, Time, and at least one Table.");
         }
-
         const duration = parseInt(document.getElementById('durationHrs').value);
         let [h, m] = startTime.split(':');
         let endH = (parseInt(h) + duration).toString().padStart(2, '0');
         const endTimeStr = `${endH}:${m}`;
-
         document.getElementById('form-start').value = startTime;
         document.getElementById('form-end').value = endTimeStr;
-        // Add hidden duration field for backend
-        let durationInput = document.getElementById('form-duration');
-        if (!durationInput) {
-            durationInput = document.createElement('input');
-            durationInput.type = 'hidden';
-            durationInput.name = 'duration';
-            durationInput.id = 'form-duration';
-            document.getElementById('finalForm').appendChild(durationInput);
-        }
+        let durationInput = document.getElementById('form-duration') || document.createElement('input');
+        durationInput.type = 'hidden'; durationInput.name = 'duration'; durationInput.id = 'form-duration';
+        document.getElementById('finalForm').appendChild(durationInput);
         durationInput.value = duration;
         document.getElementById('form-price').value = document.getElementById('sum-total').innerText.replace('$', '');
-
         const container = document.getElementById('table-ids-container');
         container.innerHTML = '';
         selectedTables.forEach(t => {
             const inp = document.createElement('input');
-            inp.type = 'hidden';
-            inp.name = 'table_ids';
-            inp.value = t.id;
+            inp.type = 'hidden'; inp.name = 'table_ids'; inp.value = t.id;
             container.appendChild(inp);
         });
-
         document.getElementById('finalForm').submit();
     }
 
@@ -563,51 +675,27 @@
         if (!track) return;
         const slides = Array.from(track.children);
         const dotsContainer = document.getElementById('carousel-dots');
-        if (!dotsContainer) return;
-
         let currentSlide = 0;
         const totalSlides = slides.length;
+        if (totalSlides === 0) return;
         track.style.width = `${totalSlides * 100}%`;
         slides.forEach(slide => slide.style.width = `${100 / totalSlides}%`);
-
-        slides.forEach((_, index) => {
-            const dot = document.createElement('div');
-            dot.classList.add('dot');
-            if (index === 0) dot.classList.add('active');
-            dot.addEventListener('click', () => {
-                currentSlide = index;
-                updateCarousel();
+        if (dotsContainer) {
+            slides.forEach((_, index) => {
+                const dot = document.createElement('div');
+                dot.classList.add('dot');
+                if (index === 0) dot.classList.add('active');
+                dot.addEventListener('click', () => { currentSlide = index; updateCarousel(); });
+                dotsContainer.appendChild(dot);
             });
-            dotsContainer.appendChild(dot);
-        });
-
+        }
         function updateCarousel() {
             const percentage = -(currentSlide * (100 / totalSlides));
             track.style.transform = `translateX(${percentage}%)`;
-            const dots = document.querySelectorAll('.dot');
-            dots.forEach((dot, i) => dot.classList.toggle('active', i === currentSlide));
+            document.querySelectorAll('.dot').forEach((dot, i) => dot.classList.toggle('active', i === currentSlide));
         }
-
-        setInterval(() => {
-            currentSlide = (currentSlide + 1) % totalSlides;
-            updateCarousel();
-        }, 2700);
+        setInterval(() => { currentSlide = (currentSlide + 1) % totalSlides; updateCarousel(); }, 2700);
     }
-
-    const restaurant_opening_hour = "{{ restaurant.opening_hour|time:'H:i' }}";
-    const restaurant_closing_hour = "{{ restaurant.closing_hour|time:'H:i' }}";
-
-    const input = document.getElementById("startTimeBtn");
-
-    input.addEventListener("change", () => {
-        const value = input.value;
-
-        const isValid = (value >= restaurant_opening_hour) || (value <= restaurant_closing_hour);
-
-        if (!isValid) {
-            alert("Time must be within operating hours");
-            input.value = "";
-        }
-    });
 </script>
 {% endblock main %}
+ %}

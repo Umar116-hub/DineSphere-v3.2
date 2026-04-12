@@ -10,7 +10,6 @@ from .models import Booking
 from Restaurants.models import Restaurant, Table, Review
 from .services import view_all_booking, create_booking, generate_invoice_html, send_booking_confirmation_email
 
-@login_required
 def booking_view(request, Restaurant_name):
     """
     Handles restaurant table reservations.
