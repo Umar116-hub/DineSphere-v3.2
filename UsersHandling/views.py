@@ -68,7 +68,7 @@ def signup_user(request):
             messages.error(request, "Something went wrong")
             return redirect("auth")
 
-    return redirect("home")
+    return redirect("auth")
 
 
 # -------------------------
@@ -102,7 +102,7 @@ def login_user(request):
             messages.error(request, f"Invalid username or password. {remaining} attempts remaining.")
             return redirect("auth")
 
-    return redirect("home")
+    return redirect("auth")
 
 
 def logout_user(request):

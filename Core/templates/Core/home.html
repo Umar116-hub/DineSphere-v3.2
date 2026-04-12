@@ -78,10 +78,10 @@
                 <form action="{% url 'search' %}#search-page" method="get" class="search-bar">
                     <select class="city-select" name="city">
                         <option value="">Select City</option>
-                        <option value="karachi">Karachi</option>
-                        <option value="islamabad">Islamabad</option>
-                        <option value="lahore">Lahore</option>
-                        <option value="matli">Matli</option>
+                        <option value="karachi" {% if city == 'Karachi' %}selected{% endif %}>Karachi</option>
+                        <option value="islamabad" {% if city == 'Islamabad' %}selected{% endif %}>Islamabad</option>
+                        <option value="lahore" {% if city == 'Lahore' %}selected{% endif %}>Lahore</option>
+                        <option value="matli" {% if city == 'Matli' %}selected{% endif %}>Matli</option>
                     </select>
                     <input type="text" class="search-input" id="thesearchbar" placeholder="Cuisine, restaurant name..."
                         name="searched-restaurant" required>
@@ -91,7 +91,7 @@
             </div>
         </div>
     </div>
-    {% if results %}
+    {% if results is not None %}
     <section id="search-page" class="sr-search-section">
     <div class="sr-container">
         
@@ -120,7 +120,7 @@
         </div>
     </div>
 </section>
-    {% elif not results %}
+    {% else %}
     <section id="main-page" style="padding-top: 50px;">
         <div class="carousels">
 
