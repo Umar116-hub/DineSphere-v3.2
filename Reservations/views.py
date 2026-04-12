@@ -106,7 +106,7 @@ def placeOrder_view(request):
         
         # Confirm the booking
         booking.status = Booking.STATUS_CONFIRMED
-        booking.payment_status = Booking.PAYMENT_STATUS_PAID
+        booking.payment_status = 'paid'
         booking.save()
         
         # Send confirmation email
