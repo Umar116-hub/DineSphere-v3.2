@@ -3,8 +3,9 @@
    UTILITIES
 ========================= */
 function timeToMinutes(time) {
+    if (!time || typeof time !== 'string' || !time.includes(':')) return 0;
     const [h, m] = time.split(":").map(Number);
-    return h * 60 + m;
+    return (isNaN(h) ? 0 : h) * 60 + (isNaN(m) ? 0 : m);
 }
 
 function normalizeRange(open, close) {

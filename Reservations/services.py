@@ -2,6 +2,7 @@ from django.utils import timezone
 from datetime import timedelta, datetime, time
 from decimal import Decimal
 from django.db import transaction
+from django.shortcuts import get_object_or_404
 from .utils import group_tables_by_seating
 from django.utils.dateparse import parse_date, parse_time
 from Restaurants.models import Table, SpecialDay, Restaurant
@@ -200,7 +201,7 @@ def create_booking(request, Restaurant_name):
     table_ids = request.POST.getlist("table_ids")
 
     # Get restaurant object
-    restaurant = Restaurant.objects.get(name=Restaurant_name)
+    restaurant = get_object_or_404(Restaurant, name=Restaurant_name.replace("_", " "))
 
     # Combine date + time and make timezone-aware
     naive_start = datetime.strptime(f"{date_str.strip()} {start_time_str.strip()}", "%Y-%m-%d %H:%M")

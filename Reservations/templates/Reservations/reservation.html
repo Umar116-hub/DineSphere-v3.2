@@ -487,11 +487,20 @@
 
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="{% static 'Reservations/js/reservation.js' %}"></script>
+<script id="app-config" type="application/json">
+{
+    "restaurantName": "{{ restaurant.name|escapejs }}",
+    "isAuthenticated": {{ request.user.is_authenticated|yesno:"true,false" }},
+    "openingHour": "{{ restaurant.opening_hour|time:'H:i' }}",
+    "closingHour": "{{ restaurant.closing_hour|time:'H:i' }}"
+}
+</script>
 <script>
-    const restaurantName = "{{ restaurant.name|escapejs }}".replace(/ /g, "_");
-    const isAuthenticated = "{{ request.user.is_authenticated|yesno:'true,false' }}" === "true";
-    const restaurant_opening_hour = "{{ restaurant.opening_hour|time:'H:i' }}";
-    const restaurant_closing_hour = "{{ restaurant.closing_hour|time:'H:i' }}";
+    const appConfig = JSON.parse(document.getElementById('app-config').textContent);
+    const restaurantName = appConfig.restaurantName.replace(/ /g, "_");
+    const isAuthenticated = appConfig.isAuthenticated;
+    const restaurant_opening_hour = appConfig.openingHour;
+    const restaurant_closing_hour = appConfig.closingHour;
 
     // Dynamic Time Slot Generation
     function generateTimeSlots() {
