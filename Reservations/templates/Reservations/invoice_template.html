@@ -171,11 +171,11 @@
             <h3>Reservation Details</h3>
             <div class="detail-row">
                 <span>Date:</span>
-                <span>{{ booking.booking_start|date:"F d, Y" }}</span>
+                <span>{{ booking.booking_start_datetime|date:"F d, Y" }}</span>
             </div>
             <div class="detail-row">
                 <span>Time:</span>
-                <span>{{ booking.booking_start|time:"g:i A" }} - {{ booking.booking_end|time:"g:i A" }}</span>
+                <span>{{ booking.booking_start_datetime|time:"g:i A" }} - {{ booking.booking_end_datetime|time:"g:i A" }}</span>
             </div>
             <div class="detail-row">
                 <span>Guests:</span>
@@ -200,7 +200,7 @@
                 <tbody>
                     {% for table in tables %}
                     <tr>
-                        <td>{{ table.table_number }}</td>
+                        <td>{{ table.name }}</td>
                         <td>{{ table.seating_type.name|default:"Standard" }}</td>
                         <td>{{ table.capacity }} guests</td>
                         <td>${{ table.calculate_price }}</td>

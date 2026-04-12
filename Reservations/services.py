@@ -399,3 +399,45 @@ def send_booking_confirmation_email(booking):
     except Exception as e:
         print(f"Email sending failed: {e}")
         return False
+
+def send_booking_cancellation_email(booking):
+    """
+    Simulates sending a cancellation and refund notification email to the customer.
+    (Currently configured for console backend printing via settings).
+    """
+    subject = f"Order Cancelled: Reservation at {booking.restaurant.name}"
+    
+    # Message Body
+    message = f"""
+    Dear {booking.customer.username},
+
+    Your reservation at {booking.restaurant.name} has been successfully cancelled.
+
+    Reservation Details:
+    Date: {booking.booking_start_datetime.strftime('%B %d, %Y')}
+    Time: {booking.booking_start_datetime.strftime('%I:%M %p')}
+    Table(s): {', '.join([t.name for t in booking.tables.all()])}
+    
+    Refund Status:
+    Your payment of ${booking.total_price} has been marked for refund.
+    Please allow 3-5 business days for the funds to appear on your statement.
+
+    Cancelled Booking Reference: #{booking.id}
+
+    We hope to host you another time!
+    """
+    
+    try:
+        from django.core.mail import send_mail
+        from django.conf import settings
+        send_mail(
+            subject=subject,
+            message=message,
+            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'support@dinesphere.com'),
+            recipient_list=[booking.customer.email],
+            fail_silently=True,
+        )
+        return True
+    except Exception as e:
+        print(f"Cancellation Email sending failed: {e}")
+        return False

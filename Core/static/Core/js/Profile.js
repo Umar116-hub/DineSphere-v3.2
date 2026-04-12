@@ -38,6 +38,6 @@ function closeModal() {
 document.getElementById("confirmCancelBtn").onclick = function() {
     if (currentCancelId) {
         // Redirect to cancel URL (Django view should handle cancellation)
-        window.location.href = `/cancel-booking/${currentCancelId}/`;
+        window.location.href = `/reservation/cancel-booking/${currentCancelId}/`;
     }
 };

@@ -8,7 +8,7 @@ from django.db.models import Sum
 from django.db import transaction
 from .models import Booking
 from Restaurants.models import Restaurant, Table, Review
-from .services import view_all_booking, create_booking, generate_invoice_html, send_booking_confirmation_email
+from .services import view_all_booking, create_booking, generate_invoice_html, send_booking_confirmation_email, send_booking_cancellation_email
 
 def booking_view(request, Restaurant_name):
     """
@@ -218,3 +218,38 @@ def get_unavailable_tables(request):
     return JsonResponse({
         "booked_tables": list(booked_table_ids)
     })
+
+@login_required
+@transaction.atomic
+def cancel_booking_view(request, booking_id):
+    """
+    Cancels a confirmed order and simulates a refund if it is requested
+    more than 2 hours before the scheduled reservation start time.
+    """
+    booking = get_object_or_404(Booking, id=booking_id, customer=request.user)
+    
+    # Must be pending or confirmed to cancel online. 
+    # (Pending means they just created it but didn't pay in checkout).
+    if booking.status not in [Booking.STATUS_PENDING, Booking.STATUS_CONFIRMED]:
+        messages.error(request, 'This booking cannot be cancelled.')
+        return redirect('profile')
+
+    # Enforce 2-hour cutoff rule if the booking is already confirmed (paid)
+    if booking.status == Booking.STATUS_CONFIRMED:
+        time_until_start = booking.booking_start_datetime - timezone.now()
+        if time_until_start < timedelta(hours=2):
+            messages.error(request, 'Too late to cancel online. Please call the restaurant directly.')
+            return redirect('profile')
+
+    # Apply Cancellation and Refund Logic
+    booking.status = Booking.STATUS_CANCELLED
+    if booking.payment_status == Booking.PAYMENT_STATUS_PAID:
+        booking.payment_status = Booking.PAYMENT_STATUS_REFUNDED
+    booking.save()
+    
+    # Fire refund email mock if they actually paid
+    if booking.payment_status == Booking.PAYMENT_STATUS_REFUNDED:
+        send_booking_cancellation_email(booking)
+
+    messages.success(request, f'Order #{booking.id} has been cancelled successfully.')
+    return redirect('profile')

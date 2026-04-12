@@ -9,6 +9,7 @@ urlpatterns = [
     path('order-success/<int:booking_id>/', views.order_success, name='order_success'),
     path('invoice/<int:booking_id>/', views.view_invoice, name='view_invoice'),
     path('get-unavailable-tables/', views.get_unavailable_tables, name='get_unavailable_tables'),
+    path('cancel-booking/<int:booking_id>/', views.cancel_booking_view, name='cancel_booking'),
     path('<slug:Restaurant_name>/', views.booking_view, name='booking'),
     path('<slug:Restaurant_name>/postReview/', views.post_review, name='post-review'),
 ]  + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
