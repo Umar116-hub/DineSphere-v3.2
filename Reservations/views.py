@@ -110,7 +110,7 @@ def placeOrder_view(request):
         booking.save()
         
         # Send confirmation email
-        send_booking_confirmation_email(request.user, booking)
+        send_booking_confirmation_email(booking)
         
         messages.success(request, "Booking confirmed successfully!")
         return redirect("order_success", booking_id=booking.id)
