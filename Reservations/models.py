@@ -14,6 +14,16 @@ class Booking(models.Model):
         (STATUS_FINISHED, 'Finished'),
         (STATUS_CANCELLED, 'Cancelled'),
     ]
+    
+    PAYMENT_STATUS_PENDING = 'pending'
+    PAYMENT_STATUS_PAID = 'paid'
+    PAYMENT_STATUS_FAILED = 'failed'
+    
+    PAYMENT_CHOICES = [
+        (PAYMENT_STATUS_PENDING, 'Pending'),
+        (PAYMENT_STATUS_PAID, 'Paid'),
+        (PAYMENT_STATUS_FAILED, 'Failed'),
+    ]
 
     restaurant = models.ForeignKey('Restaurants.Restaurant', on_delete=models.CASCADE)
     customer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bookings')
@@ -24,7 +34,7 @@ class Booking(models.Model):
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=STATUS_PENDING)
 
     # Payment status only - no card data stored (PCI compliance)
-    payment_status = models.CharField(max_length=20, default='pending')
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_CHOICES, default=PAYMENT_STATUS_PENDING)
 
     total_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
     locked_at = models.DateTimeField(null=True, blank=True)

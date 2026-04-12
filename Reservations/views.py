@@ -47,7 +47,29 @@ def booking_view(request, Restaurant_name):
 
 @login_required
 def checkout_view(request):
-    return render(request, "Reservations/checkout.html") if request.method == "GET" else placeOrder_view(request)
+    if request.method == "POST":
+        return placeOrder_view(request)
+        
+    # Safely reconstruct the checkout context from the pending booking if returning via GET
+    booking = Booking.objects.filter(
+        customer=request.user,
+        status=Booking.STATUS_PENDING
+    ).order_by('-created_at').first()
+    
+    if not booking:
+        messages.error(request, "No pending booking found to checkout.")
+        return redirect("home")
+        
+    context = {
+        "price": f"${booking.total_price:.2f}",
+        "name": booking.restaurant.name,
+        "start_time": booking.booking_start_datetime.strftime("%H:%M"),
+        "end_time": booking.booking_end_datetime.strftime("%H:%M"),
+        "date": booking.booking_start_datetime.strftime("%Y-%m-%d"),
+        "tables": booking.tables.all()
+    }
+    
+    return render(request, "Reservations/checkout.html", context)
 
 
 
@@ -106,7 +128,7 @@ def placeOrder_view(request):
         
         # Confirm the booking
         booking.status = Booking.STATUS_CONFIRMED
-        booking.payment_status = 'paid'
+        booking.payment_status = Booking.PAYMENT_STATUS_PAID
         booking.save()
         
         # Send confirmation email
@@ -115,9 +137,9 @@ def placeOrder_view(request):
         messages.success(request, "Booking confirmed successfully!")
         return redirect("order_success", booking_id=booking.id)
         
-    except Exception as e:
-        messages.error(request, f"An error occurred: {str(e)}")
-        return redirect("checkout")
+    # We no longer broadly catch Exception here. 
+    # If a generic server or code logic error occurs, it should 500 loudly 
+    # so we can track and fix it, rather than silently redirecting.
 
 
 @login_required
