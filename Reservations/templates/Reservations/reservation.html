@@ -226,13 +226,26 @@
         opacity: 1;
     }
 
-    /* Ensure specific form height for slider */
-    .form-slider-viewport {
-        height: 380px; /* Adjust based on login form height */
-        overflow: hidden;
-    }
+    /* Scoped Modal Styles (Replacing auth.css) */
+    .auth-container { width: 100%; max-width: 420px; padding: 1.5rem; margin: auto; text-align: center; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 0 40px rgba(0, 0, 0, 0.5); border-radius: 0.5rem; background-color: hsla(173, 50%, 15%, 0.95); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    .logo-header h1 { font-size: 3rem; font-weight: 900; color: white; line-height: 1; margin-bottom: 0.5rem; }
+    .logo-header p { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: #a0aec0; margin-bottom: 2rem; }
+    .auth-toggle-buttons { display: flex; justify-content: center; gap: 1rem; margin-bottom: 2rem; }
+    .toggle-btn { background: none; border: none; color: #a0aec0; font-size: 1.1rem; font-weight: 700; padding: 0.5rem 1rem; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s ease; }
+    .toggle-btn.active { color: #e67e22; border-bottom-color: #e67e22; }
+    .auth-form { width: 100%; padding-bottom: 1.5rem; }
+    .input-group { display: flex; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.4); padding-bottom: 0.25rem; }
+    .input-group i { font-size: 1.1rem; margin-right: 1rem; color: #e67e22; }
+    .input-group input, .input-group select { background: none; border: none; outline: none; width: 100%; color: white; font-size: 1rem; padding: 0.5rem 0; font-weight: 600; font-family: inherit; }
+    .input-group input[type="date"] { color-scheme: dark; }
+    .input-group select option { background-color: #0c1b18; color: white; }
+    .input-group input::placeholder { color: rgba(255, 255, 255, 0.6); font-weight: 400; }
+    .input-row { display: flex; gap: 1.5rem; width: 100%; }
+    .input-row .input-group { flex: 1; }
+    .submit-btn { width: 100%; padding: 1rem; margin-top: 1.5rem; border: none; border-radius: 0.3rem; color: white; font-size: 1.25rem; font-weight: 700; cursor: pointer; background: #e67e22; transition: all 0.3s ease; }
+    .submit-btn:hover { box-shadow: 0 6px 20px hsla(30, 80%, 55%, 0.6); }
+
 </style>
-<link rel="stylesheet" href="{% static 'UsersHandling/css/auth.css' %}">
 {% endblock %}
 
 {% block main %}
@@ -406,55 +419,52 @@
                 <button id="signup-btn-modal" class="toggle-btn" onclick="switchAuthMode('signup')">SIGNUP</button>
             </div>
             <div class="form-card">
-                <div class="form-slider-viewport">
-                    <div class="form-slider" id="modalSlider">
-                        <!-- Login Form -->
-                        <form id="login-form-modal" class="auth-form" method="post" action="/uh/login/?next={{ request.get_full_path }}">
-                            {% csrf_token %}
-                            <div class="input-group">
-                                <i class="fas fa-user"></i>
-                                <input type="text" name="username" placeholder="Username" required>
-                            </div>
-                            <div class="input-group">
-                                <i class="fas fa-lock"></i>
-                                <input type="password" name="password" placeholder="********" required>
-                            </div>
-                            <button type="submit" class="submit-btn" onclick="saveBookingState()">LOGIN & CONTINUE</button>
-                        </form>
-                        <!-- Signup Form -->
-                        <form id="signup-form-modal" class="auth-form" method="post" action="/uh/signup/?next={{ request.get_full_path }}" enctype="multipart/form-data">
-                            {% csrf_token %}
-                            <div class="input-group">
-                                <i class="fas fa-envelope"></i>
-                                <input type="email" name="email" placeholder="Email Address" required>
-                            </div>
-                            <div class="input-group">
-                                <i class="fas fa-user-plus"></i>
-                                <input type="text" name="username" placeholder="Desired Username" required>
-                            </div>
-                            <div class="input-row">
-                                <div class="input-group">
-                                    <i class="fas fa-venus-mars"></i>
-                                    <select name="gender" required>
-                                        <option value="" disabled selected>Gender</option>
-                                        <option value="male">Male</option>
-                                        <option value="female">Female</option>
-                                        <option value="other">Other</option>
-                                    </select>
-                                </div>
-                                <div class="input-group">
-                                    <i class="fas fa-calendar-alt"></i>
-                                    <input type="date" name="dob" required>
-                                </div>
-                            </div>
-                            <div class="input-group">
-                                <i class="fas fa-lock"></i>
-                                <input type="password" name="password" placeholder="Create Password" required>
-                            </div>
-                            <button type="submit" class="submit-btn" onclick="saveBookingState()">SIGNUP & CONTINUE</button>
-                        </form>
+                <!-- Login Form -->
+                <form id="login-form-modal" class="auth-form" method="post" action="/uh/login/?next={{ request.get_full_path }}" style="display: block;">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        <i class="fas fa-user"></i>
+                        <input type="text" name="username" placeholder="Username" required>
                     </div>
-                </div>
+                    <div class="input-group">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" name="password" placeholder="********" required>
+                    </div>
+                    <button type="submit" class="submit-btn" onclick="saveBookingState()">LOGIN & CONTINUE</button>
+                </form>
+                
+                <!-- Signup Form -->
+                <form id="signup-form-modal" class="auth-form" method="post" action="/uh/signup/?next={{ request.get_full_path }}" enctype="multipart/form-data" style="display: none;">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" name="email" placeholder="Email Address" required>
+                    </div>
+                    <div class="input-group">
+                        <i class="fas fa-user-plus"></i>
+                        <input type="text" name="username" placeholder="Desired Username" required>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <i class="fas fa-venus-mars"></i>
+                            <select name="gender" required>
+                                <option value="" disabled selected>Gender</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <i class="fas fa-calendar-alt"></i>
+                            <input type="date" name="dob" required>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" name="password" placeholder="Create Password" required>
+                    </div>
+                    <button type="submit" class="submit-btn" onclick="saveBookingState()">SIGNUP & CONTINUE</button>
+                </form>
             </div>
             <div style="margin-top: 15px;">
                 <button type="button" onclick="closeAuthModal()" style="background:transparent; border:none; color:rgba(255,255,255,0.6); cursor:pointer; text-decoration:underline;">
@@ -479,7 +489,7 @@
 <script src="{% static 'Reservations/js/reservation.js' %}"></script>
 <script>
     const restaurantName = "{{ restaurant.name|escapejs }}".replace(/ /g, "_");
-    const isAuthenticated = {% if request.user.is_authenticated %}true{% else %}false{% endif %};
+    const isAuthenticated = "{{ request.user.is_authenticated|yesno:'true,false' }}" === "true";
     const openingTime = "{{ restaurant.opening_hour|time:'H:i' }}";
     const closingTime = "{{ restaurant.closing_hour|time:'H:i' }}";
 
@@ -489,20 +499,29 @@
         const [openH, openM] = openingTime.split(':').map(Number);
         const [closeH, closeM] = closingTime.split(':').map(Number);
         
+        if (isNaN(openH) || isNaN(closeH)) return;
+
         let currentH = openH;
         let currentM = openM;
 
-        while (currentH < closeH || (currentH === closeH && currentM <= closeM)) {
+        let slots = 0;
+        while (slots < 48) {
             const timeStr = `${String(currentH).padStart(2, '0')}:${String(currentM).padStart(2, '0')}`;
             const label = formatAMPM(currentH, currentM);
             const opt = new Option(label, timeStr);
             select.add(opt);
+
+            if (currentH === closeH && currentM >= closeM) break;
 
             currentM += 30;
             if (currentM >= 60) {
                 currentM = 0;
                 currentH++;
             }
+            if (currentH >= 24) {
+                currentH = 0;
+            }
+            slots++;
         }
     }
 
@@ -519,7 +538,8 @@
             submitReservation();
         } else {
             document.getElementById('authModal').classList.add('active');
-        document.body.classList.add('modal-active');
+            document.body.classList.add('modal-active');
+        }
     }
 
     function closeAuthModal() {
@@ -528,20 +548,19 @@
     }
 
     function switchAuthMode(mode) {
-        const slider = document.getElementById('modalSlider');
         const loginBtn = document.getElementById('login-btn-modal');
         const signupBtn = document.getElementById('signup-btn-modal');
-        const viewport = document.querySelector('.form-slider-viewport');
+        const loginForm = document.getElementById('login-form-modal');
+        const signupForm = document.getElementById('signup-form-modal');
         
         if (mode === 'login') {
-            slider.style.transform = 'translateY(0)';
-            viewport.style.height = '380px'; 
+            loginForm.style.display = 'block';
+            signupForm.style.display = 'none';
             loginBtn.classList.add('active');
             signupBtn.classList.remove('active');
         } else {
-            // Estimate height or just use a fixed max
-            viewport.style.height = '520px'; 
-            slider.style.transform = `translateY(-400px)`; // Fixed shift for separate view
+            loginForm.style.display = 'none';
+            signupForm.style.display = 'block';
             signupBtn.classList.add('active');
             loginBtn.classList.remove('active');
         }
@@ -737,4 +756,3 @@
     }
 </script>
 {% endblock main %}
- %}
