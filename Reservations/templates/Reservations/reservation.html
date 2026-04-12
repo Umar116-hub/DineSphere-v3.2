@@ -184,9 +184,26 @@
         display: flex;
     }
 
+    /* Fix to prevent auth.css from overriding body background */
+    body.modal-active {
+        overflow: hidden;
+    }
+    
+    /* Override auth.css body background when on this page */
+    body {
+        background-color: #f3f4f6 !important; /* Original reservation page bg */
+    }
+
+    .auth-container {
+        background-color: hsla(173, 50%, 15%, 0.95) !important;
+        margin: 0 !important;
+    }
+
     .auth-modal-content {
         position: relative;
         animation: slideUp 0.4s ease-out;
+        width: 100%;
+        max-width: 420px;
     }
 
     @keyframes slideUp {
@@ -196,11 +213,23 @@
 
     .close-modal {
         position: absolute;
-        right: -40px;
-        top: 0;
+        right: -50px;
+        top: -10px;
         color: white;
-        font-size: 2rem;
+        font-size: 2.5rem;
         cursor: pointer;
+        opacity: 0.7;
+        transition: 0.3s;
+    }
+
+    .close-modal:hover {
+        opacity: 1;
+    }
+
+    /* Ensure specific form height for slider */
+    .form-slider-viewport {
+        height: 380px; /* Adjust based on login form height */
+        overflow: hidden;
     }
 </style>
 <link rel="stylesheet" href="{% static 'UsersHandling/css/auth.css' %}">
@@ -427,6 +456,11 @@
                     </div>
                 </div>
             </div>
+            <div style="margin-top: 15px;">
+                <button type="button" onclick="closeAuthModal()" style="background:transparent; border:none; color:rgba(255,255,255,0.6); cursor:pointer; text-decoration:underline;">
+                    Cancel and continue browsing as guest
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -485,24 +519,29 @@
             submitReservation();
         } else {
             document.getElementById('authModal').classList.add('active');
-        }
+        document.body.classList.add('modal-active');
     }
 
     function closeAuthModal() {
         document.getElementById('authModal').classList.remove('active');
+        document.body.classList.remove('modal-active');
     }
 
     function switchAuthMode(mode) {
         const slider = document.getElementById('modalSlider');
         const loginBtn = document.getElementById('login-btn-modal');
         const signupBtn = document.getElementById('signup-btn-modal');
+        const viewport = document.querySelector('.form-slider-viewport');
         
         if (mode === 'login') {
             slider.style.transform = 'translateY(0)';
+            viewport.style.height = '380px'; 
             loginBtn.classList.add('active');
             signupBtn.classList.remove('active');
         } else {
-            slider.style.transform = `translateY(-${document.getElementById('login-form-modal').offsetHeight}px)`;
+            // Estimate height or just use a fixed max
+            viewport.style.height = '520px'; 
+            slider.style.transform = `translateY(-400px)`; // Fixed shift for separate view
             signupBtn.classList.add('active');
             loginBtn.classList.remove('active');
         }
