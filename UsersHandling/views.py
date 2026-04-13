@@ -5,13 +5,108 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.core.cache import cache
 from .models import User, CustomerProfile, RestaurantStaff
-from .services import create_customer_user
+from .services import create_customer_user, create_owner_user
 
 # Rate limiting settings
 MAX_LOGIN_ATTEMPTS = 5
 LOGIN_TIMEOUT = 300  # 5 minutes in seconds
 
 # Create your views here.
+
+def business_register(request):
+    """Dedicated combined business registration: owner account + restaurant in one flow."""
+    if request.method == "GET":
+        # If already logged in as owner, skip to restaurant registration
+        if request.user.is_authenticated and request.user.role == 'OWNER':
+            return redirect('restaurant_registration')
+        return render(request, 'UsersHandling/business_register.html')
+
+    if request.method == "POST":
+        # --- Step 1: Extract owner account fields ---
+        username = request.POST.get("username", "").strip()
+        email = request.POST.get("email", "").strip()
+        password = request.POST.get("password", "")
+        dob = request.POST.get("dob") or None
+        gender = request.POST.get("gender") or None
+        image = request.FILES.get("image")
+
+        # --- Step 2: Extract restaurant fields ---
+        res_name = request.POST.get("res_name", "").strip()
+        res_title = request.POST.get("res_title", "").strip()
+        city = request.POST.get("city", "").strip()
+
+        def render_with_error(msg):
+            messages.error(request, msg)
+            return render(request, 'UsersHandling/business_register.html', {
+                'username': username, 'email': email, 'dob': dob, 'gender': gender,
+            })
+
+        # --- Validations ---
+        if not username or not email or not password:
+            return render_with_error("Username, email and password are required.")
+        if not res_name:
+            return render_with_error("Restaurant name is required.")
+        if not city:
+            return render_with_error("City is required.")
+
+        # Password strength
+        if len(password) < 8:
+            return render_with_error("Password must be at least 8 characters.")
+        if not any(c.isupper() for c in password):
+            return render_with_error("Password must contain at least one uppercase letter.")
+        if not any(c.islower() for c in password):
+            return render_with_error("Password must contain at least one lowercase letter.")
+        if not any(c.isdigit() for c in password):
+            return render_with_error("Password must contain at least one number.")
+
+        try:
+            from datetime import datetime
+
+            # 1. Create owner user
+            user = create_owner_user(username, email, password)
+            user.date_of_birth = dob
+            user.gender = gender
+            if image:
+                user.image = image
+            user.save()
+
+            # 2. Create restaurant
+            open_hour_str = request.POST.get("open_hour", "18:00")
+            close_hour_str = request.POST.get("close_hour", "01:00")
+
+            from Restaurants.Services import create_restaurant_for_user
+            restaurant_data = {
+                "name": res_name,
+                "title": res_title or res_name,
+                "image": request.FILES.get("res_image"),
+                "about": request.POST.get("res_about", ""),
+                "city": city,
+                "address": request.POST.get("address", ""),
+                "phone": request.POST.get("phone", ""),
+                "opening_hour": datetime.strptime(open_hour_str, "%H:%M").time(),
+                "closing_hour": datetime.strptime(close_hour_str, "%H:%M").time(),
+                "cooldown": int(request.POST.get("cooldown") or 30),
+                "slot_duration": int(request.POST.get("slot_duration") or 60),
+                "advance_days": int(request.POST.get("advance_days") or 60),
+                "fb_link": request.POST.get("fb_link", ""),
+                "web_link": request.POST.get("web_link", ""),
+            }
+
+            restaurant = create_restaurant_for_user(user, restaurant_data)
+
+            # 3. Log in the new owner and redirect to dashboard
+            login(request, user)
+            request.session["selected_restaurant_id"] = restaurant.id
+            messages.success(request, f"Welcome! Your business '{restaurant.name}' has been registered successfully.")
+            return redirect("analytics")
+
+        except ValueError as e:
+            return render_with_error(str(e))
+        except Exception as e:
+            return render_with_error(f"Registration failed: {str(e)}")
+
+    return redirect("business_register")
+
 
 def auth(request):
     # Clear any stale messages from previous sessions
@@ -27,6 +122,7 @@ def auth(request):
         'active_mode': initial_mode,
         'next_url': next_url
     })
+
 
 
 def signup_user(request):
