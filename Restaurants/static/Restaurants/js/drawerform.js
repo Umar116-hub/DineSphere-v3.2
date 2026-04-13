@@ -143,34 +143,57 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // --- SELECTION ---
-    document.querySelectorAll('.clickable-card').forEach(card => {
+    // --- MULTIPLE SELECTION LOGIC ---
+    let selectedIds = [];
+    const countDisplay = document.getElementById('selectedCount');
+    const deselectBtn = document.getElementById('deselectBtn');
 
-        
+    function updateActionPanel() {
+        if (countDisplay) countDisplay.innerText = selectedIds.length;
+        if (deselectBtn) deselectBtn.disabled = selectedIds.length === 0;
+    }
+
+    document.querySelectorAll('.clickable-card').forEach(card => {
         card.addEventListener('click', function() {
-            document.querySelectorAll('.clickable-card').forEach(c => c.classList.remove('selected'));
-            this.classList.add('selected');
-            selectedId = this.dataset.id;
-            selectedData = { ...this.dataset };
+            const id = this.dataset.id;
+            
+            // Toggle selection
+            if (this.classList.contains('selected')) {
+                this.classList.remove('selected');
+                selectedIds = selectedIds.filter(selId => selId !== id);
+                // If the last one was deselected, clear selectedData
+                if (selectedId === id) selectedId = null;
+            } else {
+                this.classList.add('selected');
+                selectedIds.push(id);
+                selectedId = id; // keeps reference to the most recently selected item for backwards comp
+                selectedData = { ...this.dataset };
+            }
+            updateActionPanel();
         });
     });
-    
+
+    if (deselectBtn) {
+        deselectBtn.addEventListener('click', () => {
+            document.querySelectorAll('.clickable-card').forEach(c => c.classList.remove('selected'));
+            selectedIds = [];
+            selectedId = null;
+            selectedData = {};
+            updateActionPanel();
+        });
+    }
 
     // --- UNIVERSAL UPDATE ---
     const updateBtn = document.querySelector('.btn-update');
     if (updateBtn) {
         updateBtn.addEventListener('click', () => {
-            if (!selectedId) return alert("Please select an item first!");
+            if (selectedIds.length === 0) return alert("Please select an item first!");
+            if (selectedIds.length > 1) return alert("Please select only ONE item to edit!");
 
-            // 1. Find the mapping function for the current page
             const mapper = PageMappers[currentModel];
-            
             if (mapper) {
-                // 2. Open UI
                 document.getElementById('drawerOverlay').classList.add('show');
                 document.getElementById('sideDrawer').classList.add('open');
-
-                // 3. Let the mapper fill the form
                 mapper(form, selectedData);
             } else {
                 console.error(`No mapper defined for model: ${currentModel}`);
@@ -182,20 +205,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const deleteBtn = document.querySelector('.btn-delete');
     if (deleteBtn) {
         deleteBtn.addEventListener('click', () => {
-            if (!selectedId) return alert("Please select an item first!");
+            if (selectedIds.length === 0) return alert("Please select an item first!");
+            if (selectedIds.length > 1) return alert("Batch delete is currently disabled. Please select only ONE item to delete!");
             
-            // Set the generic modal action
             const modal = document.getElementById('confirmModal');
-            document.getElementById('modalMessage').innerText = `Delete ${selectedData}?`;
+            document.getElementById('modalMessage').innerText = `Delete ${selectedData.name || 'this item'}?`;
             modal.classList.add('show');
             document.getElementById('modalOverlay').classList.add('show');
-
-            // Setup the specific delete URL
-            
             window.pendingDeleteUrl = window.location.origin + window.location.pathname + `delete/${selectedId}/`;
         });
-        
-    }// --- REFRESH BUTTON ---
+    }
+
+    // --- REFRESH BUTTON ---
     const refreshBtn = document.querySelector('.btn-view');
     if (refreshBtn) {
         refreshBtn.addEventListener('click', () => {
