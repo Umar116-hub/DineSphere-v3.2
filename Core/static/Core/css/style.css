@@ -413,20 +413,38 @@ nav p {
 /* Media Queries for Hero and Menu (Simplified) */
 /* ================================================= */
 @media (max-width: 850px) {
-
     nav ul.nav-items,
     nav .nav-actions {
-        display: none;
+        display: none !important;
+    }
+
+    nav {
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    nav p.site-name {
+        margin: 0 !important;
+        text-align: left !important;
+        flex: 0 1 auto !important;
     }
 
     /* Show hamburger/cross container on mobile */
     .nav-toggle-container {
-        display: block;
+        display: block !important;
+        margin-left: auto !important;
     }
 
     .hamburger {
-        display: block;
-        opacity: 1;
+        display: block !important;
+        opacity: 1 !important;
+        position: relative !important;
+        top: auto !important;
+        right: auto !important;
+        transform: none !important;
     }
 
     /* Initial mobile state */
@@ -1236,15 +1254,8 @@ nav p {
 /* Tablet and smaller (max-width: 768px) */
 @media (max-width: 768px) {
     /* Navigation */
-    nav {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-        padding: 10px 20px;
-    }
-    
     .nav-links {
-        display: none; /* Hide regular nav, show hamburger */
+        display: none !important;
     }
     
     /* Restaurant grid - single column */
