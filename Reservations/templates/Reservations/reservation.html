@@ -298,15 +298,6 @@
         cursor: pointer;
     }
 
-    /* Summary Card Sticky */
-    .summary-sticky {
-        position: sticky;
-        top: 20px;
-        border: 1.5px solid #111827;
-        z-index: 10;
-        background: #fff;
-    }
-
     .summary-line {
         display: flex;
         justify-content: space-between;
@@ -463,14 +454,34 @@
 {% block main %}
 <div class="reservation-container">
 
-    <!-- Desktop Image Card (Hidden on Mobile) -->
-    <div class="section-card up-right desktop-image-card" style="padding:0; overflow:hidden;">
+    <!-- Restaurant Hero Card (Mobile Only) -->
+    <div class="restaurant-hero">
         {% if restaurant.image %}
-        <img src="{{ restaurant.image.url }}" style="width:100%; height:450px; object-fit:cover;">
+        <img src="{{ restaurant.image.url }}" class="hero-image" alt="{{ restaurant.name }}">
         {% else %}
-        <img src="https://placehold.co/800x450/111827/ffffff?text={{ restaurant.name|urlencode }}" style="width:100%; height:450px; object-fit:cover;">
+        <img src="https://placehold.co/1200x500/111827/ffffff?text={{ restaurant.name|urlencode }}" class="hero-image">
         {% endif %}
+        <div class="hero-overlay"></div>
+        
+        <div class="hero-content">
+            <h1>{{ restaurant.name }}</h1>
+        </div>
     </div>
+
+    <!-- Navigation (Mobile Only) -->
+    <nav class="external-nav">
+        <a href="javascript:window.history.back()" class="ext-nav-btn back-btn">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+        <a href="/" class="ext-nav-btn">
+            <i class="fas fa-home"></i> Home
+        </a>
+        {% if request.user.is_authenticated %}
+        <a href="/profile" class="ext-nav-btn">
+            <i class="fas fa-user"></i> Profile
+        </a>
+        {% endif %}
+    </nav>
 
     <!-- Main Content Grid -->
     <div class="section-card up-left transparent-section">
@@ -565,6 +576,15 @@
         </div>
     </div>
 
+    <!-- Desktop Image Card (Hidden on Mobile) -->
+    <div class="section-card up-right desktop-image-card" style="padding:0; overflow:hidden;">
+        {% if restaurant.image %}
+        <img src="{{ restaurant.image.url }}" style="width:100%; height:450px; object-fit:cover;">
+        {% else %}
+        <img src="https://placehold.co/800x450/111827/ffffff?text={{ restaurant.name|urlencode }}" style="width:100%; height:450px; object-fit:cover;">
+        {% endif %}
+    </div>
+
     <form action="/reservations/{{restaurant.name|space_to_value:'_'}}/postReview" method="post" style="grid-column: 1;">
         <div class="section-card middle-left transparent-section">
             <h3>Rate your experience</h3>
@@ -593,7 +613,7 @@
         </div>
     </form>
 
-    <div class="section-card middle-right transparent-section summary-sticky">
+    <div class="section-card middle-right transparent-section">
         <h3>Booking Summary</h3>
         <hr>
         <div class="summary-line">
