@@ -23,12 +23,57 @@
     {% endblock %}
     <style>
         /* --- Main Content --- */
-
         /* Up arrows in accent to ternary */
+
+        /* --- Dashboard Messages --- */
+        .dash-messages {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000000;
+            max-width: 380px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .dash-msg {
+            padding: 1rem 1.25rem;
+            border-radius: 8px;
+            font-weight: 600;
+            box-shadow: 0 10px 15px rgba(0,0,0,0.3);
+            animation: slideInRight 0.3s ease-out;
+            transition: opacity 0.3s ease;
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .dash-msg.success { background: #10b981; color: white; }
+        .dash-msg.error { background: #ef4444; color: white; }
+        .dash-msg.warning { background: #f59e0b; color: white; }
+        .dash-msg.info { background: #3b82f6; color: white; }
     </style>
 </head>
 
 <body>
+    {% if messages %}
+    <div class="dash-messages">
+        {% for message in messages %}
+        <div class="dash-msg {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    <script>
+        setTimeout(() => {
+            document.querySelectorAll('.dash-msg').forEach(m => {
+                m.style.opacity = '0';
+                setTimeout(() => m.remove(), 300);
+            });
+        }, 5000);
+    </script>
+    {% endif %}
     <!-- Full-page loader -->
     <div id="page-loader">
         <div class="loader-logo">⧲ DineSphere</div>
