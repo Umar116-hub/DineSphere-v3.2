@@ -227,7 +227,7 @@
                 </p>
 
                 {% if not request.user.is_authenticated %}
-                <button class="feature-btn" onclick="window.location.href='/business/registration'">
+                <button class="feature-btn" onclick="window.location.href='/uh/auth?mode=owner'">
                     Register
                 </button>
                 {% elif request.user.role == 'OWNER' %}
@@ -239,7 +239,7 @@
                     See Today's Work
                 </button>
                 {% else %}
-                <button class="feature-btn" onclick="window.location.href='/business/registration'">
+                <button class="feature-btn" onclick="window.location.href='/uh/auth?mode=owner'">
                     Register Business
                 </button>
                 {% endif %}
@@ -258,7 +258,7 @@
             {% elif request.user.is_authenticated and request.user.role == 'STAFF' %}
             <li><a href="/business">Staff Dashboard</a></li>
             {% else %}
-            <li><a href="/business/registration">Register Business</a></li>
+            <li><a href="/uh/auth?mode=owner">Register Business</a></li>
             {% endif %}
             <li><a href="/profile">Profile</a></li>
             {% if request.user.is_authenticated %}

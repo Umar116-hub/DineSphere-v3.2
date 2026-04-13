@@ -45,13 +45,12 @@ document.addEventListener('DOMContentLoaded', () => {
         formSlider.style.display = '';
         if (ownerForm) ownerForm.style.display = 'none';
 
-        if (newMode === 'owner') {
+        // 'owner' mode reuses the signup form (with hidden intent=owner field)
+        if (newMode === 'owner' && ownerForm) {
             formSlider.style.display = 'none';
-            if (ownerForm) {
-                ownerForm.style.display = 'block';
-                formViewport.style.height = ownerForm.scrollHeight + 'px';
-            }
-        } else if (newMode === 'signup') {
+            ownerForm.style.display = 'block';
+            formViewport.style.height = ownerForm.scrollHeight + 'px';
+        } else if (newMode === 'signup' || newMode === 'owner') {
             formSlider.style.transform = `translateY(-${loginHeight}px)`;
             formViewport.style.height = signupHeight + 'px';
         } else {
@@ -62,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (document.activeElement) document.activeElement.blur();
 
         loginBtn.classList.toggle('active', newMode === 'login');
-        signupBtn.classList.toggle('active', newMode === 'signup');
+        signupBtn.classList.toggle('active', newMode === 'signup' || newMode === 'owner');
         if (ownerBtn) ownerBtn.classList.toggle('active', newMode === 'owner');
 
         currentMode = newMode;

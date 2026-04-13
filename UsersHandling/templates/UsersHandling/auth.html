@@ -36,8 +36,8 @@
         </div>
 
         <div class="auth-toggle-buttons">
-            <button id="login-btn" class="toggle-btn {% if active_mode != 'signup' %}active{% endif %}" data-mode="login">LOGIN</button>
-            <button id="signup-btn" class="toggle-btn {% if active_mode == 'signup' %}active{% endif %}" data-mode="signup">SIGNUP</button>
+            <button id="login-btn" class="toggle-btn {% if active_mode != 'signup' and active_mode != 'owner' %}active{% endif %}" data-mode="login">LOGIN</button>
+            <button id="signup-btn" class="toggle-btn {% if active_mode == 'signup' or active_mode == 'owner' %}active{% endif %}" data-mode="signup">SIGNUP</button>
         </div>
 
         <!-- Form Card (The Visual Container) -->
@@ -68,6 +68,12 @@
                         enctype="multipart/form-data">
                         {% csrf_token %}
                         <input type="hidden" name="next" value="{{ next_url|default:'' }}">
+                        {% if active_mode == 'owner' %}
+                        <input type="hidden" name="intent" value="owner">
+                        <div style="background: rgba(230, 126, 34, 0.1); border: 1px solid #e67e22; padding: 10px; border-radius: 5px; color: #fff; margin-bottom: 15px; font-size: 0.9rem; text-align: center;">
+                            <i class="fas fa-store"></i> Registering a <strong>Business Account</strong>
+                        </div>
+                        {% endif %}
 
                         <div class="input-group">
                             <i class="fas fa-envelope"></i>
