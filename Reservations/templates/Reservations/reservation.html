@@ -128,13 +128,91 @@
         font-size: 1.1rem;
     }
 
+    /* Navigation Styling */
+    .seating-nav {
+        display: flex;
+        gap: 10px;
+        margin: 20px 0;
+        overflow-x: auto;
+    }
+
+    .nav-item {
+        padding: 10px 20px;
+        background: #f3f4f6;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: bold;
+        white-space: nowrap;
+        transition: 0.3s;
+        color: #4b5563;
+    }
+
+    .nav-item.active {
+        background: #111827;
+        color: #fff;
+    }
+
+    .seating-content {
+        display: none;
+    }
+
+    .seating-content.active {
+        display: block;
+    }
+
+    /* Transparency for left sections */
+    .transparent-section {
+        background: transparent !important;
+        box-shadow: none !important;
+        padding: 10px 0;
+    }
+
+    .section-card {
+        background: #fff;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Up Left: Booking Header */
+    .booking-header h1 {
+        font-size: 2.5rem;
+        margin: 0;
+        font-weight: 900;
+    }
+
+    /* Desktop/Mobile Visibility */
+    @media (min-width: 993px) {
+        .restaurant-hero, .external-nav, .mobile-info-bar {
+            display: none !important;
+        }
+        .desktop-header {
+            display: block !important;
+        }
+        .desktop-image-card {
+            display: block !important;
+        }
+    }
+
+    @media (max-width: 992px) {
+        .restaurant-hero, .external-nav, .mobile-info-bar {
+            display: flex !important;
+        }
+        .desktop-header {
+            display: none !important;
+        }
+        .desktop-image-card {
+            display: none !important;
+        }
+    }
+
     /* Adjust main grid */
     .reservation-container {
         display: grid;
-        grid-template-columns: 1.1fr 0.9fr;
+        grid-template-columns: 1.2fr 0.8fr;
         gap: 30px;
-        padding: 40px 20px;
-        max-width: 1400px;
+        padding: 20px;
+        max-width: 1300px;
         margin: auto;
     }
 
@@ -385,41 +463,58 @@
 {% block main %}
 <div class="reservation-container">
 
-    <!-- Restaurant Hero Card -->
-    <div class="restaurant-hero">
+    <!-- Desktop Image Card (Hidden on Mobile) -->
+    <div class="section-card up-right desktop-image-card" style="padding:0; overflow:hidden;">
         {% if restaurant.image %}
-        <img src="{{ restaurant.image.url }}" class="hero-image" alt="{{ restaurant.name }}">
+        <img src="{{ restaurant.image.url }}" style="width:100%; height:450px; object-fit:cover;">
         {% else %}
-        <img src="https://placehold.co/1200x500/111827/ffffff?text={{ restaurant.name|urlencode }}" class="hero-image">
+        <img src="https://placehold.co/800x450/111827/ffffff?text={{ restaurant.name|urlencode }}" style="width:100%; height:450px; object-fit:cover;">
         {% endif %}
-        <div class="hero-overlay"></div>
-        
-        <div class="hero-content">
-            <h1>{{ restaurant.name }}</h1>
-        </div>
     </div>
-
-    <!-- Navigation Below Card -->
-    <nav class="external-nav">
-        <a href="javascript:window.history.back()" class="ext-nav-btn back-btn">
-            <i class="fas fa-arrow-left"></i> Back
-        </a>
-        <a href="/" class="ext-nav-btn">
-            <i class="fas fa-home"></i> Home
-        </a>
-        {% if request.user.is_authenticated %}
-        <a href="/profile" class="ext-nav-btn">
-            <i class="fas fa-user"></i> Profile
-        </a>
-        {% endif %}
-    </nav>
 
     <!-- Main Content Grid -->
     <div class="section-card up-left transparent-section">
-        <div class="restaurant-info-bar" style="margin-bottom: 20px; display: flex; justify-content: space-between; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 10px;">
+        <!-- Desktop Header (Hidden on Mobile) -->
+        <div class="desktop-header booking-header">
+            <div class="bhai-bhai" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button onclick="window.history.back()" title="Go Back" style="
+                        width: 40px; height: 40px; border-radius: 50%; border: 2px solid #111827;
+                        background: transparent; color: #111827; font-size: 1.1rem; cursor: pointer;
+                        display: flex; align-items: center; justify-content: center;
+                        transition: all 0.2s ease;
+                    " onmouseover="this.style.background='#111827';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='#111827'">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <h1 id="r-name">{{ restaurant.name }}</h1>
+                </div>
+                <div class="header-nav-links" style="display: flex; gap: 10px;">
+                    <a href="/" style="
+                        text-decoration: none; color: #111827; font-weight: 600; font-size: 0.85rem;
+                        padding: 8px 18px; border-radius: 20px; border: 1.5px solid #111827;
+                        transition: all 0.2s ease;
+                    " onmouseover="this.style.background='#111827';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='#111827'">Home</a>
+                    {% if request.user.is_authenticated %}
+                    <a href="/profile" style="
+                        text-decoration: none; color: #fff; font-weight: 600; font-size: 0.85rem;
+                        padding: 8px 18px; border-radius: 20px; background: #111827;
+                        transition: all 0.2s ease;
+                    " onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Profile</a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="booking-sub-header" style="display: flex; width: 100%; justify-content: space-between; height: 20px">
+                <p>{{ restaurant.title }}</p>
+                <p>{{ restaurant.opening_hour }} - {{ restaurant.closing_hour }}</p>
+            </div>
+        </div>
+
+        <!-- Mobile Info Bar (Hidden on Desktop) -->
+        <div class="mobile-info-bar" style="margin-bottom: 20px; display: none; justify-content: space-between; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 10px;">
             <span style="font-weight: 700; color: #4b5563; font-size: 1.1rem;"><i class="fas fa-utensils"></i> {{ restaurant.title }}</span>
             <span style="font-weight: 600; color: #6b7280;"><i class="fas fa-clock"></i> {{ restaurant.opening_hour }} - {{ restaurant.closing_hour }}</span>
         </div>
+
         <div class="booking-strip">
             <div class="input-rect">
                 <span>Reservation Date</span>
@@ -470,44 +565,6 @@
         </div>
     </div>
 
-    <div class="section-card up-right summary-sticky">
-        <h3>Booking Summary</h3>
-        <hr>
-        <div class="summary-line">
-            <span>Selected Capacity</span>
-            <span id="sum-cap">0</span>
-        </div>
-        <div class="summary-line">
-            <span>Duration</span>
-            <span id="sum-duration">1 Hour</span>
-        </div>
-        <div class="summary-line">
-            <span>Subtotal</span>
-            <span id="sum-total">$0</span>
-        </div>
-        <div class="summary-line">
-            <span>Date & Time</span>
-            <span id="sum-datetime">Not set</span>
-        </div>
-
-        {% if request.user.role == 'OWNER' %}
-        <div style="background: rgba(17, 24, 39, 0.05); padding: 15px; border-radius: 8px; border-left: 4px solid #111827;">
-            <p style="font-size: 0.9rem; margin: 0; color: #111827;"><strong>Owner Account:</strong> Reservations are disabled for business accounts.</p>
-        </div>
-        {% elif request.user.is_authenticated %}
-        <button id="bookNowBtn" onclick="submitReservation()"
-            style="width: 100%; background: #111827; color: white; padding: 18px; border-radius: 10px; font-weight: bold; border: none; cursor: pointer; transition: 0.3s;"
-            onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
-            Proceed to Checkout
-        </button>
-        {% else %}
-        <button onclick="openAuthModal()"
-            style="width: 100%; background: #111827; color: white; padding: 18px; border-radius: 10px; font-weight: bold; border: none; cursor: pointer;">
-            Login to Book
-        </button>
-        {% endif %}
-    </div>
-
     <form action="/reservations/{{restaurant.name|space_to_value:'_'}}/postReview" method="post" style="grid-column: 1;">
         <div class="section-card middle-left transparent-section">
             <h3>Rate your experience</h3>
@@ -523,7 +580,9 @@
             
             <div style="margin-top: 15px; display: flex; gap: 10px;">
                 {% if request.user.role == 'OWNER' %}
-                    <!-- Owner message already shown above -->
+                    <div style="background: rgba(17, 24, 39, 0.05); padding: 15px; border-radius: 8px; border-left: 4px solid #111827;">
+                        <p style="font-size: 0.9rem; margin: 0; color: #111827;"><strong>Owner Account:</strong> Reviews and reservations are disabled for business accounts.</p>
+                    </div>
                 {% elif request.user.is_authenticated %}
                     <button type="button" class="post-review-btn" id="submitReviewBtn">Post Review</button>
                 {% else %}
@@ -533,6 +592,18 @@
             </div>
         </div>
     </form>
+
+    <div class="section-card middle-right transparent-section summary-sticky">
+        <h3>Booking Summary</h3>
+        <hr>
+        <div class="summary-line">
+            <span>Selected Capacity</span>
+            <span id="sum-cap">0</span>
+        </div>
+        <div class="summary-line">
+            <span>Duration</span>
+            <span id="sum-duration">1 Hour</span>
+        </div>
         <div class="summary-line">
             <span>Hourly Rate (Combined)</span>
             <span id="sum-hourly">$0.00</span>
