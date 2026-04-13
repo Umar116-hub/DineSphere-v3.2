@@ -147,10 +147,19 @@ document.addEventListener('DOMContentLoaded', function() {
     let selectedIds = [];
     const countDisplay = document.getElementById('selectedCount');
     const deselectBtn = document.getElementById('deselectBtn');
+    const actionPanel = document.getElementById('actionPanel');
 
     function updateActionPanel() {
         if (countDisplay) countDisplay.innerText = selectedIds.length;
         if (deselectBtn) deselectBtn.disabled = selectedIds.length === 0;
+        
+        if (actionPanel) {
+            if (selectedIds.length > 0) {
+                actionPanel.classList.add('show');
+            } else {
+                actionPanel.classList.remove('show');
+            }
+        }
     }
 
     document.querySelectorAll('.clickable-card').forEach(card => {

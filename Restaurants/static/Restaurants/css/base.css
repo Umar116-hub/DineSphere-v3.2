@@ -585,9 +585,9 @@
 
     .header-controls {
         width: 100%;
-        justify-content: space-between;
+        justify-content: flex-start;
         flex-wrap: wrap;
-        gap: 10px;
+        gap: 15px;
     }
 
     .header-controls p {
