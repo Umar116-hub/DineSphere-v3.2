@@ -7,66 +7,103 @@
 <link rel="stylesheet" href="{% static 'Reservations/css/registration.css' %}">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <style>
+    /* --- Hero Card Styling --- */
+    .restaurant-hero {
+        grid-column: 1 / -1;
+        position: relative;
+        height: 350px;
+        border-radius: 20px;
+        overflow: hidden;
+        margin-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+
+    .hero-image {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        object-fit: cover;
+        z-index: 1;
+    }
+
+    .hero-overlay {
+        position: absolute;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.2) 60%, transparent 100%);
+        z-index: 2;
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 3;
+        padding: 40px;
+        color: white;
+    }
+
+    .hero-content h1 {
+        font-size: 3.5rem;
+        font-weight: 900;
+        margin-bottom: 5px;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .hero-nav {
+        position: absolute;
+        top: 25px;
+        right: 25px;
+        z-index: 4;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .nav-btn {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(10px);
+        color: white;
+        text-decoration: none;
+        padding: 10px 20px;
+        border-radius: 30px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .nav-btn:hover {
+        background: white;
+        color: #111827;
+        transform: translateY(-2px);
+    }
+
+    .nav-btn.back-circle {
+        width: 44px;
+        height: 44px;
+        padding: 0;
+        justify-content: center;
+    }
+
+    .hero-sub {
+        display: flex;
+        gap: 20px;
+        font-weight: 600;
+        opacity: 0.9;
+        font-size: 1.1rem;
+    }
+
+    /* Adjust main grid */
     .reservation-container {
         display: grid;
-        grid-template-columns: 1.2fr 0.8fr;
+        grid-template-columns: 1.1fr 0.9fr;
         gap: 30px;
-        padding: 20px;
-        max-width: 1300px;
+        padding: 40px 20px;
+        max-width: 1400px;
         margin: auto;
-    }
-
-    /* Navigation Styling */
-    .seating-nav {
-        display: flex;
-        gap: 10px;
-        margin: 20px 0;
-        overflow-x: auto;
-    }
-
-    .nav-item {
-        padding: 10px 20px;
-        background: #f3f4f6;
-        border-radius: 8px;
-        cursor: pointer;
-        font-weight: bold;
-        white-space: nowrap;
-        transition: 0.3s;
-        color: #4b5563;
-    }
-
-    .nav-item.active {
-        background: #111827;
-        color: #fff;
-    }
-
-    .seating-content {
-        display: none;
-    }
-
-    .seating-content.active {
-        display: block;
-    }
-
-    /* Transparency for left sections */
-    .transparent-section {
-        background: transparent !important;
-        box-shadow: none !important;
-        padding: 10px 0;
-    }
-
-    .section-card {
-        background: #fff;
-        padding: 20px;
-        border-radius: 15px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-    }
-
-    /* Up Left: Booking Header */
-    .booking-header h1 {
-        font-size: 2.5rem;
-        margin: 0;
-        font-weight: 900;
     }
 
     .booking-strip {
@@ -250,33 +287,23 @@
         .reservation-container {
             grid-template-columns: 1fr;
             padding: 15px;
-            gap: 20px;
         }
 
-        .summary-sticky {
-            position: static;
-            margin-top: 20px;
+        .restaurant-hero {
+            height: 250px;
         }
 
-        .booking-header h1 {
-            font-size: 2rem;
-        }
-        
-        .bhai-bhai {
-            flex-direction: column;
-            align-items: flex-start !important;
-            gap: 15px;
+        .hero-content h1 {
+            font-size: 2.5rem;
         }
 
-        .header-nav-links {
-            width: 100%;
-            justify-content: flex-start;
+        .hero-content {
+            padding: 20px;
         }
 
-        .booking-sub-header {
-            flex-direction: column;
-            gap: 5px;
-            height: auto !important;
+        .hero-nav {
+            top: 15px;
+            right: 15px;
         }
     }
 
@@ -319,41 +346,40 @@
 {% block main %}
 <div class="reservation-container">
 
-    <div class="section-card up-left transparent-section">
-        <div class="booking-header">
-            <div class="bhai-bhai" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <button onclick="window.history.back()" title="Go Back" style="
-                        width: 40px; height: 40px; border-radius: 50%; border: 2px solid #111827;
-                        background: transparent; color: #111827; font-size: 1.1rem; cursor: pointer;
-                        display: flex; align-items: center; justify-content: center;
-                        transition: all 0.2s ease;
-                    " onmouseover="this.style.background='#111827';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='#111827'">
-                        <i class="fas fa-arrow-left"></i>
-                    </button>
-                    <h1 id="r-name">{{ restaurant.name }}</h1>
-                </div>
-                <div class="header-nav-links" style="display: flex; gap: 10px;">
-                    <a href="/" style="
-                        text-decoration: none; color: #111827; font-weight: 600; font-size: 0.85rem;
-                        padding: 8px 18px; border-radius: 20px; border: 1.5px solid #111827;
-                        transition: all 0.2s ease;
-                    " onmouseover="this.style.background='#111827';this.style.color='#fff'" onmouseout="this.style.background='transparent';this.style.color='#111827'">Home</a>
-                    {% if request.user.is_authenticated %}
-                    <a href="/profile" style="
-                        text-decoration: none; color: #fff; font-weight: 600; font-size: 0.85rem;
-                        padding: 8px 18px; border-radius: 20px; background: #111827;
-                        transition: all 0.2s ease;
-                    " onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Profile</a>
-                    {% endif %}
-                </div>
-            </div>
-            <div class="booking-sub-header" style="display: flex; width: 100%; justify-content: space-between; height: 20px">
-                <p>{{ restaurant.title }}</p>
-                <p>{{ restaurant.opening_hour }} - {{ restaurant.closing_hour }}</p>
+    <!-- Restaurant Hero Card -->
+    <div class="restaurant-hero">
+        {% if restaurant.image %}
+        <img src="{{ restaurant.image.url }}" class="hero-image" alt="{{ restaurant.name }}">
+        {% else %}
+        <img src="https://placehold.co/1200x500/111827/ffffff?text={{ restaurant.name|urlencode }}" class="hero-image">
+        {% endif %}
+        <div class="hero-overlay"></div>
+        
+        <nav class="hero-nav">
+            <button onclick="window.history.back()" class="nav-btn back-circle" title="Go Back">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <a href="/" class="nav-btn">
+                <i class="fas fa-home"></i> Home
+            </a>
+            {% if request.user.is_authenticated %}
+            <a href="/profile" class="nav-btn">
+               <i class="fas fa-user"></i> Profile
+            </a>
+            {% endif %}
+        </nav>
+
+        <div class="hero-content">
+            <h1>{{ restaurant.name }}</h1>
+            <div class="hero-sub">
+                <span><i class="fas fa-utensils"></i> {{ restaurant.title }}</span>
+                <span><i class="fas fa-clock"></i> {{ restaurant.opening_hour }} - {{ restaurant.closing_hour }}</span>
             </div>
         </div>
+    </div>
 
+    <!-- Main Content Grid -->
+    <div class="section-card up-left transparent-section">
         <div class="booking-strip">
             <div class="input-rect">
                 <span>Reservation Date</span>
@@ -363,7 +389,6 @@
                 <span>Start Hour</span>
                 <select id="startTimeBtn" style="border:none; font-weight:bold; width:100%; background-color: transparent;">
                     <option value="">Select Time</option>
-                    <!-- Options populated via JS -->
                 </select>
             </div>
             <div class="input-rect">
@@ -405,16 +430,45 @@
         </div>
     </div>
 
-    <div class="section-card up-right" style="padding:0; overflow:hidden;">
-        {% if restaurant.image %}
-        <img src="{{ restaurant.image.url }}" style="width:100%; height:450px; object-fit:cover;">
+    <div class="section-card up-right summary-sticky">
+        <h3>Booking Summary</h3>
+        <hr>
+        <div class="summary-line">
+            <span>Selected Capacity</span>
+            <span id="sum-cap">0</span>
+        </div>
+        <div class="summary-line">
+            <span>Duration</span>
+            <span id="sum-duration">1 Hour</span>
+        </div>
+        <div class="summary-line">
+            <span>Subtotal</span>
+            <span id="sum-total">$0</span>
+        </div>
+        <div class="summary-line">
+            <span>Date & Time</span>
+            <span id="sum-datetime">Not set</span>
+        </div>
+
+        {% if request.user.role == 'OWNER' %}
+        <div style="background: rgba(17, 24, 39, 0.05); padding: 15px; border-radius: 8px; border-left: 4px solid #111827;">
+            <p style="font-size: 0.9rem; margin: 0; color: #111827;"><strong>Owner Account:</strong> Reservations are disabled for business accounts.</p>
+        </div>
+        {% elif request.user.is_authenticated %}
+        <button id="bookNowBtn"
+            style="width: 100%; background: #111827; color: white; padding: 18px; border-radius: 10px; font-weight: bold; border: none; cursor: pointer; transition: 0.3s;"
+            onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+            Proceed to Checkout
+        </button>
         {% else %}
-        <img src="https://placehold.co/800x450/111827/ffffff?text={{ restaurant.name|urlencode }}" style="width:100%; height:450px; object-fit:cover;">
+        <button onclick="openAuthModal()"
+            style="width: 100%; background: #111827; color: white; padding: 18px; border-radius: 10px; font-weight: bold; border: none; cursor: pointer;">
+            Login to Book
+        </button>
         {% endif %}
     </div>
 
-    <form action="/reservations/{{restaurant.name|space_to_value:'_'}}/postReview" method="post">
-
+    <form action="/reservations/{{restaurant.name|space_to_value:'_'}}/postReview" method="post" style="grid-column: 1;">
         <div class="section-card middle-left transparent-section">
             <h3>Rate your experience</h3>
             <div class="star-rating" id="star-container">
@@ -426,27 +480,19 @@
             </div>
             <input type="hidden" id="selected-rating" value="0">
             <textarea id="reviewText" rows="3" placeholder="Tell us about your visit..."></textarea>
-
-            {% if request.user.role == 'OWNER' %}
-            <div style="background: rgba(17, 24, 39, 0.05); padding: 15px; border-radius: 8px; border-left: 4px solid #111827;">
-                <p style="font-size: 0.9rem; margin: 0; color: #111827;"><strong>Owner Account:</strong> Reviews and reservations are disabled for business accounts. Please use a customer account to interact.</p>
+            
+            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                {% if request.user.role == 'OWNER' %}
+                    <!-- Owner message already shown above -->
+                {% elif request.user.is_authenticated %}
+                    <button type="button" class="post-review-btn" id="submitReviewBtn">Post Review</button>
+                {% else %}
+                    <button type="button" class="post-review-btn" onclick='alert("Please log in to post a review.")'>Post Review</button>
+                {% endif %}
+                <button type="button" class="post-review-btn" id="clearReviewBtn" style="background: transparent; color: #111827; border: 1px solid #111827;">Clear</button>
             </div>
-            {% elif request.user.is_authenticated %}
-            <button type="button" class="post-review-btn" id="submitReviewBtn">Post Review</button>
-            {% else %}
-            <button type="button" class="post-review-btn" onclick='alert("Please log in to post a review.")'>Post Review</button>
-            {% endif %}
-            <button type="button" class="post-review-btn" id="clearReviewBtn">Clear</button>
         </div>
     </form>
-
-    <div class="section-card middle-right transparent-section">
-        <h3>Booking Summary</h3>
-        <hr>
-        <div class="summary-line">
-            <span>Selected Capacity</span>
-            <span id="sum-cap">0</span>
-        </div>
         <div class="summary-line">
             <span>Hourly Rate (Combined)</span>
             <span id="sum-hourly">$0.00</span>
