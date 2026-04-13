@@ -38,7 +38,7 @@
         var _dashLoaderStart = Date.now();
         function dismissDashLoader() {
             var loader = document.getElementById('page-loader');
-            if (!loader) return;
+            if (!loader || loader.style.display === 'none') return;
             var elapsed = Date.now() - _dashLoaderStart;
             var remaining = Math.max(0, 500 - elapsed);
             setTimeout(function() {
@@ -46,13 +46,25 @@
                 setTimeout(function() { loader.style.display = 'none'; }, 400);
             }, remaining);
         }
+        // Primary: fire on DOM ready
         document.addEventListener('DOMContentLoaded', dismissDashLoader);
+        // Secondary: fire on full page load (images etc.)
+        window.addEventListener('load', dismissDashLoader);
+        // Tertiary: handle bfcache (back/forward)
         window.addEventListener('pageshow', function(e) {
             if (e.persisted) {
                 _dashLoaderStart = Date.now();
                 dismissDashLoader();
             }
         });
+        // SAFETY NET: absolutely never stay stuck longer than 3 seconds
+        setTimeout(function() {
+            var loader = document.getElementById('page-loader');
+            if (loader && loader.style.display !== 'none') {
+                loader.classList.add('fade-out');
+                setTimeout(function() { loader.style.display = 'none'; }, 400);
+            }
+        }, 3000);
     </script>
 
     <div class="sidebar">
