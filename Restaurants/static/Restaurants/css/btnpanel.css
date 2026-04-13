@@ -1,117 +1,116 @@
 .panel-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            max-width: 1200px;
-            /* margin: auto; */
-            /* justify-content: start !important; */
-            
-        }
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    gap: 12px;
+    max-width: 1200px;
+    padding: 10px 0 20px 0;
+    margin-bottom: 20px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
 
-        /* The Rectangle Button Card */
-        .action-card {
-            background: var(--white);
-            flex: 1;
-            min-width: 180px;
-            padding: 15px 20px;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            cursor: pointer;
-            border: 2px solid transparent;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-            position: relative;
-            overflow: hidden;
-        }
+.panel-container {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
 
-        /* Hover States - Using your HSL colors */
-        .btn-add:hover { 
-            border-color: var(--primary-color); 
-            background: var(--secondary-color);
-            transform: translateY(-3px);
-        }
-        
-        .btn-update:hover { 
-            border-color: var(--ternary-color); 
-            background: hsl(30, 80%, 95%);
-            transform: translateY(-3px);
-        }
+.panel-container::-webkit-scrollbar {
+    display: none; /* Chrome, Safari and Opera */
+}
 
-        .btn-delete:hover { 
-            border-color: #ef4444; 
-            background: #fef2f2;
-            transform: translateY(-3px);
-        }
+/* Redesigned into Small Pill-Like Buttons */
+.action-card {
+    background: var(--white);
+    flex: 0 0 auto !important;
+    padding: 8px 18px !important;
+    border-radius: 40px !important; /* Pill shape */
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 10px;
+    cursor: pointer;
+    border: 1.5px solid #e5e7eb;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    position: relative;
+    overflow: hidden;
+    height: 46px !important; /* Consistent height */
+    min-width: unset !important;
+}
 
-        .btn-view:hover { 
-            border-color: #3b82f6; 
-            background: #eff6ff;
-            transform: translateY(-3px);
-        }
+/* Hover States */
+.action-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
 
-        /* Icon Circle Styling */
-        .icon-box {
-            width: 42px;
-            height: 42px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.1rem;
-            flex-shrink: 0;
-            transition: 0.3s;
-        }
+.btn-add:hover { border-color: var(--primary-color); background: var(--secondary-color); }
+.btn-update:hover { border-color: var(--ternary-color); background: hsl(30, 80%, 95%); }
+.btn-delete:hover { border-color: #ef4444; background: #fef2f2; }
+.btn-view:hover { border-color: #3b82f6; background: #eff6ff; }
 
-        /* Mapping icons to themes */
-        .btn-add .icon-box { background: var(--secondary-color); color: var(--primary-color); }
-        .btn-update .icon-box { background: hsl(30, 80%, 90%); color: var(--ternary-color); }
-        .btn-delete .icon-box { background: #fee2e2; color: #ef4444; }
-        .btn-view .icon-box { background: #dbeafe; color: #3b82f6; }
+/* Icon Circle Styling (Smaller) */
+.icon-box {
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 0.85rem !important;
+    flex-shrink: 0 !important;
+    transition: 0.3s;
+}
 
-        /* Data & Label Styling */
-        .card-content {
-            display: flex;
-            flex-direction: column;
-        }
+.btn-add .icon-box, .btn-finish .icon-box { background: var(--secondary-color); color: var(--primary-color); }
+.btn-update .icon-box { background: hsl(30, 80%, 90%); color: var(--ternary-color); }
+.btn-delete .icon-box, .btn-cancel .icon-box { background: #fee2e2; color: #ef4444; }
+.btn-view .icon-box { background: #dbeafe; color: #3b82f6; }
 
-        .card-label {
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: #6b7280;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 2px;
-            transition: 0.3s;
-        }
+/* Compact Content */
+.card-content {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+}
 
-        .card-value {
-            font-size: 1.2rem;
-            font-weight: 900;
-            color: var(--text-color);
-        }
+.card-label {
+    font-size: 0.85rem !important;
+    font-weight: 700 !important;
+    color: var(--text-color) !important;
+    text-transform: none !important;
+    letter-spacing: normal !important;
+    white-space: nowrap !important;
+    margin-bottom: 0 !important;
+}
 
-        /* Progress Ring (Mini version from the screenshot) */
-        .progress-mini {
-            position: absolute;
-            right: -10px;
-            top: 50%;
-            transform: translateY(-50%);
-            opacity: 0.1;
-            font-size: 3rem;
-            transition: 0.3s;
-        }
+/* Highlighting only the action name, hiding the extra "value" text */
+.card-value {
+    display: none !important;
+}
 
-        .action-card:hover .progress-mini {
-            opacity: 0.2;
-            right: 10px;
-        }
+/* Progress Ring (Hidden by default to save space) */
+.progress-mini {
+    display: none !important;
+}
 
-        @media (max-width: 768px) {
-            .action-card { min-width: 45%; }
-        }
-
-        @media (max-width: 480px) {
-            .action-card { min-width: 100%; }
-        }
+/* Mobile Adjustments (Keep it tight) */
+@media (max-width: 768px) {
+    .action-card {
+        padding: 6px 14px !important;
+        gap: 8px;
+        height: 40px !important;
+    }
+    
+    .icon-box {
+        width: 24px !important;
+        height: 24px !important;
+        font-size: 0.75rem !important;
+    }
+    
+    .card-label {
+        font-size: 0.8rem !important;
+    }
+}

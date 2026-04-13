@@ -109,9 +109,15 @@
 
 @media (max-width: 480px) {
     .card {
-        flex: 0 0 100%;
-        /* 1 card on mobile */
+        flex: 0 0 85%; /* Show part of the next card */
+        margin: 0 10px;
     }
+    .carousel-btn {
+        padding: 8px 12px;
+        font-size: 20px;
+    }
+    .btn-left { left: 5px; }
+    .btn-right { right: 5px; }
 }
 
 

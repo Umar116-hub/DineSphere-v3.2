@@ -11,6 +11,10 @@
 {% block main %}
 <div class="profile-container">
     <header class="profile-header">
+        <a href="/" class="back-home-btn">
+            <i class="fas fa-arrow-left"></i>
+            <span>Back to Home</span>
+        </a>
         <div class="cover-photo"></div>
         <div class="user-meta">
             <div class="avatar-container">
@@ -36,6 +40,7 @@
         <button class="tab-btn" onclick="openTab(event, 'finished-orders')">Completed</button>
         <button class="tab-btn" onclick="openTab(event, 'cancelled-orders')">Cancelled</button>
         {% endif %}
+        <button class="tab-btn" onclick="openTab(event, 'my-reviews')">My Reviews</button>
     </nav>
 
     <div class="content-wrapper">
@@ -316,6 +321,43 @@
                         {% endfor %}
                     </tbody>
                 </table>
+                {% endif %}
+            </div>
+        </div>
+        <div id="my-reviews" class="tab-content">
+            <h3>My Reviews</h3>
+            <div class="reviews-list">
+                {% if not user_reviews %}
+                <div class="empty-state">
+                    <div class="empty-icon">⭐</div>
+                    <h4>No Reviews Yet</h4>
+                    <p>You haven't posted any reviews. Share your experience at a restaurant!</p>
+                </div>
+                {% else %}
+                {% for review in user_reviews %}
+                <div class="review-card" style="background:#fff; border:1px solid #eee; padding:20px; border-radius:15px; margin-bottom:15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); transition: transform 0.2s ease;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+                        <div>
+                            <h4 style="margin:0; color:var(--primary-color); font-size:1.1rem;">{{ review.restaurant.name }}</h4>
+                            <p style="font-size:0.85rem; color:#888; margin:4px 0;"><i class="far fa-calendar-alt"></i> {{ review.created_at|date:"d M Y" }}</p>
+                        </div>
+                        <div style="color:#f1c40f; font-size:1rem;">
+                            {% for i in "12345"|make_list %}
+                            <i class="{% if forloop.counter <= review.rating %}fas{% else %}far{% endif %} fa-star"></i>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <p style="margin:0; color:#444; font-size:1rem; line-height:1.6; font-style: italic;">"{{ review.comment }}"</p>
+                    <div style="margin-top:12px; display:flex; align-items:center; gap:10px;">
+                        {% if review.on_display %}
+                        <span class="badge success" style="font-size:0.75rem;"><i class="fas fa-check-circle"></i> Publicly Visible</span>
+                        {% else %}
+                        <span class="badge pending" style="font-size:0.75rem;"><i class="fas fa-clock"></i> Pending Moderation</span>
+                        {% endif %}
+                        <a href="/reservation/{{ review.restaurant.name|space_to_value }}/" style="font-size:0.8rem; color:var(--ternary-color); text-decoration:none; font-weight:600;">View Restaurant <i class="fas fa-chevron-right"></i></a>
+                    </div>
+                </div>
+                {% endfor %}
                 {% endif %}
             </div>
         </div>

@@ -970,6 +970,36 @@
     }
 
     document.addEventListener("DOMContentLoaded", function () {
+        // Star Rating Interactivity
+        const stars = document.querySelectorAll("#star-container i");
+        const ratingInput = document.getElementById("selected-rating");
+
+        stars.forEach(star => {
+            star.addEventListener("mouseover", function() {
+                const val = this.dataset.value;
+                stars.forEach(s => {
+                    if (s.dataset.value <= val) s.classList.add('active');
+                    else s.classList.remove('active');
+                });
+            });
+
+            star.addEventListener("mouseout", function() {
+                const currentVal = ratingInput.value;
+                stars.forEach(s => {
+                    if (s.dataset.value <= currentVal) s.classList.add('active');
+                    else s.classList.remove('active');
+                });
+            });
+
+            star.addEventListener("click", function() {
+                ratingInput.value = this.dataset.value;
+                stars.forEach(s => {
+                    if (s.dataset.value <= ratingInput.value) s.classList.add('active');
+                    else s.classList.remove('active');
+                });
+            });
+        });
+
         generateTimeSlots();
         restoreBookingState();
         initTestimonialCarousel();

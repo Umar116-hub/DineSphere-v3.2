@@ -1,4 +1,4 @@
-from .models import Restaurant, ReviewSummary
+from .models import Restaurant, ReviewSummary, TableSize, SeatingType
 from UsersHandling.models import RestaurantStaff, User
 from django.db.models import ForeignKey, ManyToManyField, BooleanField, FileField, IntegerField, Count
 from Reservations.models import Booking

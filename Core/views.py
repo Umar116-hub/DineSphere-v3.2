@@ -68,6 +68,10 @@ def profile(request):
     pending_booking = bookings.filter(status=Booking.STATUS_PENDING)
     canceled_booking = bookings.filter(status=Booking.STATUS_CANCELLED)
     
+    # Reviews
+    from Restaurants.models import Review
+    user_reviews = Review.objects.filter(user=request.user).order_by('-created_at')
+
     # Owner restaurants
     from UsersHandling.models import RestaurantStaff
     owner_restaurants = RestaurantStaff.objects.filter(
@@ -82,6 +86,7 @@ def profile(request):
         "pending_booking": pending_booking if pending_booking.exists() else None,
         "canceled_booking": canceled_booking if canceled_booking.exists() else None,
         "owner_restaurants": owner_restaurants,
+        "user_reviews": user_reviews,
     })
 
 @login_required

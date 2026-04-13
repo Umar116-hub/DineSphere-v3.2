@@ -55,15 +55,27 @@
 {% block content %}
 <div class="container">
     <header class="filter-panel">
-        <div class="filter-group">
-            <span class="filter-label">View</span>
-            <div class="view-switcher">
-                <button class="view-btn active" id="gridBtn" title="Grid View">
-                    <i class="fas fa-th-large"></i>
+        <!-- Manage Actions Menu (New) -->
+        <div class="filter-group manage-menu-group">
+            <div class="manage-menu-container">
+                <button class="manage-btn" id="manageMenuTrigger">
+                    <i class="fas fa-tasks"></i> Manage Tables
+                    <i class="fas fa-chevron-down" style="font-size: 0.7rem; margin-left: auto;"></i>
                 </button>
-                <button class="view-btn" id="listBtn" title="List View">
-                    <i class="fas fa-list"></i>
-                </button>
+                <div class="manage-dropdown" id="manageDropdown">
+                    <a href="{% url 'analytics' %}seatingtype/" class="manage-item">
+                        <i class="fas fa-chair"></i> Add Seating Type
+                    </a>
+                    <a href="javascript:void(0)" onclick="fetchData('seatingtype')" class="manage-item">
+                        <i class="fas fa-th-list"></i> View Seating Types
+                    </a>
+                    <a href="{% url 'analytics' %}tablesize/" class="manage-item">
+                        <i class="fas fa-table"></i> Add Table Type
+                    </a>
+                    <a href="javascript:void(0)" onclick="fetchData('tablesize')" class="manage-item">
+                        <i class="fas fa-eye"></i> View Table Types
+                    </a>
+                </div>
             </div>
         </div>
 
@@ -77,17 +89,17 @@
             </select>
         </div>
 
-        <div class="filter-group toggle-filter">
-            <label class="checkbox-wrapper">
+        <div class="checkbox-list">
+            <label class="checkbox-item">
                 <input type="checkbox" checked> Available
             </label>
-            <label class="checkbox-wrapper">
+            <label class="checkbox-item">
                 <input type="checkbox"> Budget (Cheap)
             </label>
         </div>
 
         <div class="filter-group">
-            <input type="text" class="custom-select" placeholder="Search items..." style="width: 200px;">
+            <input type="text" class="custom-select" placeholder="Search tables..." style="width: 200px;">
         </div>
     </header>
 
@@ -144,33 +156,23 @@
         </div>
     </form>
 </div>
+
+<!-- View Results Modal -->
+<div class="view-modal-overlay" id="viewModal">
+    <div class="view-modal">
+        <div class="view-modal-header">
+            <h3 id="modalTitle">View Items</h3>
+            <button onclick="closeViewModal()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="view-modal-body" id="modalBody">
+            <!-- Content loaded via JS -->
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block bottom_navigation %}
- <button type="button" class="panel-btn" onclick="window.location.href='{% url 'analytics' %}seatingtype/';">
-    <i class="fas fa-chair"></i> Add Seating Type
-</button>
-
-<button type="button" class="panel-btn" onclick="fetchData('seatingtype')">
-    <i class="fas fa-th-list"></i> View Seating Type
-</button>
-
-<button type="button" class="panel-btn" onclick="window.location.href='{% url 'analytics' %}tablesize/';">
-    <i class="fas fa-table"></i> Add Table Type
-</button>
-
-<button type="button" class="panel-btn" onclick="fetchData('tablesize')">
-    <i class="fas fa-eye"></i> View Table Type
-</button>
-<div id="viewModal" class="view-modal">
-    <div class="modal-header">
-        <h3 id="modalTitle">Items</h3>
-        <button onclick="closeViewModal()" class="close-modal-btn" style="background-color: transparent; border: none; color: var(--ternary-color);"><i class="fas fa-times"></i></button>
-    </div>
-    <div class="modal-body" id="modalBody">
-        </div>
-</div>
-
+<!-- Floating actions moved to Filter Panel Menu for cleaner mobile layout -->
 {% endblock %}
 
 {% block scripts %}
@@ -213,5 +215,15 @@ function fetchData(type) {
 function closeViewModal() {
     document.getElementById('viewModal').style.display = 'none';
 }
+
+// Manage Menu Toggle Logic
+document.getElementById('manageMenuTrigger')?.addEventListener('click', function(e) {
+    e.stopPropagation();
+    document.getElementById('manageDropdown')?.classList.toggle('show');
+});
+
+document.addEventListener('click', function() {
+    document.getElementById('manageDropdown')?.classList.remove('show');
+});
 </script>
 {% endblock %}

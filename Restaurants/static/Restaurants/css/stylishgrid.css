@@ -11,7 +11,6 @@
 
 .container {
     max-width: 1200px;
-    /* margin: auto; */
 }
 
 /* --- Filter Panel --- */
@@ -97,12 +96,10 @@
     transition: var(--transition);
 }
 
-/* Grid State */
 .data-grid.grid-view {
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
 }
 
-/* List State (Convert to Table-like Rows) */
 .data-grid.list-view {
     grid-template-columns: 1fr;
 }
@@ -125,7 +122,6 @@
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
 }
 
-/* Image Section */
 .item-image {
     height: 180px;
     background: #eee;
@@ -143,14 +139,19 @@
     text-transform: uppercase;
 }
 
-.status-available {
+.status-available, .status-pending {
     background: var(--secondary-color);
     color: var(--primary-color);
 }
 
-.status-unavailable {
+.status-unavailable, .status-cancelled {
     background: #fee2e2;
     color: #ef4444;
+}
+
+.status-finished {
+    background: #e5e7eb;
+    color: #374151;
 }
 
 /* Content Section */
@@ -180,78 +181,212 @@
     color: var(--primary-color);
 }
 
-/* List View Modifier Styles */
-.list-view .item-card {
-    flex-direction: row;
-    align-items: center;
-    height: 100px;
-    padding-right: 20px;
-}
-
-.list-view .item-image {
-    width: 120px;
-    height: 100%;
-}
-
-.list-view .item-content {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 30px;
-}
-
-.list-view .item-title {
-    font-size: 1rem;
-    margin: 0;
-}
-
-.list-view .item-label {
-    margin: 0;
-    margin-right: 20px;
-    min-width: 80px;
-}
-
-@media (max-width: 768px) {
-    .list-view .item-card {
-        height: auto;
-        flex-direction: column;
-    }
-
-    .list-view .item-image {
-        width: 100%;
-        height: 150px;
-    }
-
-    .list-view .item-content {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 10px;
-        padding: 20px;
-    }
-}
-
 /* Comprehensive Mobile Overrides */
 @media (max-width: 768px) {
     .filter-panel {
-        flex-direction: column;
-        align-items: stretch;
-    }
-    
-    .filter-group {
-        width: 100%;
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    
-    .filter-group input, 
-    .filter-group select, 
-    .custom-select {
-        width: 100% !important;
-        box-sizing: border-box;
+        display: grid !important;
+        grid-template-columns: 1fr 1fr; /* 2-column layout */
+        gap: 10px;
+        padding: 10px;
+        overflow: visible !important;
+        z-index: 2000;
+        position: relative;
     }
 
-    .toggle-filter {
-        flex-direction: column;
-        gap: 10px;
+    .view-switcher, 
+    .filter-group:has(.view-switcher) {
+        display: none !important;
     }
+
+    .filter-group {
+        width: 100% !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 4px !important;
+    }
+
+    /* Filters will naturally fill the 1fr 1fr grid columns in order */
+    .manage-menu-group {
+        grid-column: 1;
+        z-index: 2010;
+        position: relative;
+    }
+
+    .filter-panel .filter-group:last-child {
+        grid-column: 1 / span 2; /* Search spans full width */
+    }
+
+    .checkbox-list {
+        grid-column: 1 / span 2;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 6px !important;
+        padding-top: 5px;
+    }
+
+    .checkbox-item {
+        display: flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        font-size: 0.75rem;
+        font-weight: 600;
+        width: max-content !important;
+    }
+
+    .item-card {
+        flex-direction: row !important;
+        min-height: 90px;
+    }
+
+    .item-image {
+        width: 100px !important;
+        height: 100% !important;
+        min-height: 90px;
+    }
+
+    .status-badge {
+        right: auto !important;
+        left: 5px !important;
+        font-size: 0.6rem !important;
+    }
+}
+
+/* Manage Menu Dropdown System */
+.manage-menu-container {
+    position: relative;
+    width: 100%;
+}
+
+.manage-btn {
+    width: 100%;
+    padding: 10px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.manage-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 200px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    z-index: 5000; /* Extremely high z-index */
+    margin-top: 5px;
+    border: 1px solid #e5e7eb;
+}
+
+.manage-dropdown.show {
+    display: block;
+}
+
+.manage-item {
+    padding: 12px 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-color);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.85rem;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.manage-item:hover {
+    background: #f9fafb;
+}
+
+.manage-item i {
+    color: var(--primary-color);
+    width: 16px;
+    text-align: center;
+}
+
+/* View Results Modal */
+.view-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 6000;
+    padding: 20px;
+}
+
+.view-modal {
+    background: white !important;
+    width: 90%;
+    max-width: 450px;
+    border-radius: 12px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    display: flex; /* Ensure it uses flex for header/body layout */
+    flex-direction: column;
+    z-index: 6100; /* Higher than overlay */
+}
+
+.view-modal-header {
+    padding: 15px 20px;
+    background: var(--primary-color);
+    color: white !important;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 12px 12px 0 0;
+}
+
+.view-modal-header h3 {
+    margin: 0;
+    color: white !important;
+}
+
+.view-modal-header button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.view-modal-body {
+    padding: 20px;
+    max-height: 400px;
+    overflow-y: auto;
+    background: white;
+}
+
+.list-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid #f3f4f6;
+    color: var(--text-color);
+}
+
+.error-msg {
+    color: #ef4444;
+    padding: 10px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.loading-spinner {
+    text-align: center;
+    padding: 20px;
+    color: var(--sub-text);
 }

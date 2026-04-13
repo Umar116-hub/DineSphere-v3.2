@@ -11,6 +11,10 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <title>Register Your Business — DineSphere</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             background: linear-gradient(135deg, hsl(173, 60%, 12%) 0%, hsl(173, 50%, 8%) 100%);
             min-height: 100vh;
@@ -30,6 +34,7 @@
         /* --- Header --- */
         .biz-header {
             margin-bottom: 30px;
+            position: relative;
         }
         .biz-header h1 {
             font-size: 2.8rem;
@@ -104,10 +109,12 @@
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 0 20px;
+            gap: 20px 30px;
         }
         .form-group {
             margin-bottom: 20px;
+            min-width: 0;
+            width: 100%;
         }
         .form-group.full-width {
             grid-column: 1 / -1;
@@ -301,13 +308,67 @@
         .msg.success { background: #10b981; color: white; }
         .msg.error { background: #ef4444; color: white; }
 
+        /* --- Back to Home Button --- */
+        .back-home-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: 50px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        .back-home-btn:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #e67e22;
+            transform: translateY(-50%) translateX(-4px);
+        }
+
+        /* Adjust header title to avoid overlap if needed, but since it's centered it might be fine. 
+           However, let's ensure it doesn't overlap on slightly smaller screens. */
+        .biz-header h1 {
+            padding: 0 120px;
+        }
+
         /* --- Responsive --- */
         @media (max-width: 600px) {
-            .form-row { grid-template-columns: 1fr; }
-            .form-card { padding: 25px 20px; }
+            .back-home-btn {
+                position: static;
+                transform: none;
+                font-size: 0.8rem;
+                padding: 6px 12px;
+                margin-bottom: 15px;
+            }
+            .back-home-btn:hover {
+                transform: translateX(-4px);
+            }
+            .biz-header h1 {
+                padding: 0;
+            }
+            .form-row { 
+                grid-template-columns: 1fr; 
+                gap: 0;
+            }
+            .form-card { padding: 25px 15px; }
             .biz-header h1 { font-size: 2.2rem; }
-            body { padding: 20px 10px; }
+            body { padding: 15px 10px; }
             .pwd-checklist { grid-template-columns: 1fr; }
+            
+            /* Ensure inputs don't overflow on very small screens */
+            .form-group input, .form-group select, .form-group textarea {
+                width: 100%;
+                box-sizing: border-box;
+            }
         }
     </style>
 </head>
@@ -324,6 +385,10 @@
     <div class="biz-register-container">
         <!-- Header -->
         <div class="biz-header">
+            <!-- Back Link -->
+            <a href="/" class="back-home-btn">
+                <i class="fas fa-arrow-left"></i> Back to Home
+            </a>
             <h1>Dine<span>Sphere</span></h1>
             <p>Business Registration</p>
             <div class="subtitle">Create your owner account & register your restaurant</div>
@@ -336,7 +401,7 @@
             <div class="step-dot" data-step="3"></div>
         </div>
 
-        <form id="bizForm" method="post" action="{% url 'business_register' %}" enctype="multipart/form-data">
+        <form id="bizForm" method="post" action="{% url 'business_register' %}" enctype="multipart/form-data" autocomplete="off">
             {% csrf_token %}
             <div class="form-card">
 
@@ -349,33 +414,33 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label>Username <span class="required">*</span></label>
-                            <input type="text" name="username" placeholder="e.g. john_owner" value="{{ username|default:'' }}" required>
+                            <input type="text" name="username" placeholder="e.g. john_owner" value="{{ username|default:'' }}" required autocomplete="username">
                         </div>
                         <div class="form-group">
                             <label>Email <span class="required">*</span></label>
-                            <input type="email" name="email" placeholder="you@business.com" value="{{ email|default:'' }}" required>
+                            <input type="email" name="email" placeholder="you@business.com" value="{{ email|default:'' }}" required autocomplete="email">
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Gender <span class="optional">(optional)</span></label>
-                            <select name="gender">
-                                <option value="" selected>Select Gender</option>
+                            <label>Gender <span class="required">*</span></label>
+                            <select name="gender" required>
+                                <option value="" disabled selected>Select Gender</option>
                                 <option value="male" {% if gender == 'male' %}selected{% endif %}>Male</option>
                                 <option value="female" {% if gender == 'female' %}selected{% endif %}>Female</option>
                                 <option value="other" {% if gender == 'other' %}selected{% endif %}>Other</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Date of Birth <span class="optional">(optional)</span></label>
-                            <input type="date" name="dob" value="{{ dob|default:'' }}">
+                            <label>Date of Birth <span class="required">*</span></label>
+                            <input type="date" name="dob" value="{{ dob|default:'' }}" required>
                         </div>
                     </div>
 
                     <div class="form-group">
                         <label>Password <span class="required">*</span></label>
-                        <input type="password" name="password" id="pwd" placeholder="Minimum 8 characters" required>
+                        <input type="password" name="password" id="pwd" placeholder="Minimum 8 characters" required autocomplete="new-password">
                         <div class="pwd-checklist" id="pwdChecklist">
                             <div class="chk" data-c="length"><i class="fas fa-circle"></i> 8+ characters</div>
                             <div class="chk" data-c="upper"><i class="fas fa-circle"></i> Uppercase</div>
@@ -417,8 +482,8 @@
                             <input type="text" name="city" placeholder="e.g. New York" required>
                         </div>
                         <div class="form-group">
-                            <label>Address <span class="optional">(optional)</span></label>
-                            <input type="text" name="address" placeholder="123 Main Street">
+                            <label>Address <span class="required">*</span></label>
+                            <input type="text" name="address" placeholder="123 Main Street" required>
                         </div>
                     </div>
 
@@ -472,8 +537,8 @@
                             <input type="number" name="advance_days" placeholder="60" value="60">
                         </div>
                         <div class="form-group">
-                            <label>Phone Number <span class="optional">(optional)</span></label>
-                            <input type="tel" name="phone" placeholder="+1 234 567 8900">
+                            <label>Phone Number <span class="required">*</span></label>
+                            <input type="tel" name="phone" placeholder="+1 234 567 8900" required>
                         </div>
                     </div>
 
@@ -579,10 +644,18 @@
         style.textContent = `@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }`;
         document.head.appendChild(style);
 
-        // Auto-dismiss messages
         setTimeout(() => {
             document.querySelectorAll('.msg').forEach(m => { m.style.opacity = '0'; setTimeout(() => m.remove(), 300); });
         }, 5000);
+
+        // Set max date for DOB to today
+        document.addEventListener('DOMContentLoaded', function() {
+            const dobInput = document.querySelector('input[name="dob"]');
+            if (dobInput) {
+                const today = new Date().toISOString().split('T')[0];
+                dobInput.setAttribute('max', today);
+            }
+        });
     </script>
 
 </body>

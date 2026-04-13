@@ -18,7 +18,7 @@
     </title>
 
     <link rel="stylesheet" href="{% static 'Restaurants/css/base.css' %}?v=1.1">
-    <link rel="stylesheet" href="{% static 'Restaurants/css/btnpanel.css' %}">
+    <link rel="stylesheet" href="{% static 'Restaurants/css/btnpanel.css' %}?v=1.1">
     {% block styles %}
     {% endblock %}
     <style>
@@ -155,39 +155,47 @@
 <div class="main-content">
     <div class="header">
         <div class="header-title">
-            <h1>{% block name %}{% endblock %}</h1>
+            <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 5px;">
+                <h1>{% block name %}{% endblock %}</h1>
+                <!-- Icons moved under title -->
+                <div class="header-action-icons">
+                    {% if request.user|is_owner %}
+                    <a href="/business/business-info" title="Business Info"><i class="fas fa-briefcase c-pointer"></i></a>
+                    {% endif %}
+                    <a href="/business/staff-management" title="Staff Management"><i class="fas fa-user-tie c-pointer"></i></a>
+                    <div class="notification-bell">
+                        <a href="/"><i class="fas fa-arrow-left"></i></a>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="header-controls">
-            <p>Welcome {{ CP__OwnerProfile }}!</p>
+            <!-- Hidden data container for Switcher JS logic -->
+            <span id="current-business-name" data-current-id="{{ CP__Selected.id }}" style="display:none;">
+                {{ CP__Selected.name }}
+            </span>
+
             {% if request.user|is_owner %}
             <div class="dropdown-wrapper">
-                <div class="dropdown-menu" id="business-trigger">
-                    <i class="fab fa-briefcase dropdown-icon"></i>
-                    <span id="current-business-name" data-current-id="{{ CP__Selected.id }}">
-                        {{ CP__Selected.name|default:"Select Restaurant" }}
-                    </span>
-                    <i class="fas fa-chevron-down dropdown-icon"></i>
+                <div class="avatar-circle" id="business-trigger" title="{{ CP__Selected.name }}">
+                    {{ CP__Selected.name|slice:":1"|upper }}
                 </div>
                 
-                <ul class="dropdown-list" id="business-list">
+                <ul class="dropdown-list" id="business-list" style="right: 0; left: auto;">
+                    <li class="dropdown-header">
+                        <i class="fas fa-store"></i> {{ CP__Selected.name }}
+                    </li>
+                    <li class="dropdown-divider"></li>
                     {% for restaurant in CP__Restaurants %}
                     {% if restaurant.id != CP__Selected.id %}
-                    <li class="dropdown-item" data-id="{{ restaurant.id }}">{{ restaurant.name }}</li>
+                    <li class="dropdown-item" data-id="{{ restaurant.id }}">
+                        {{ restaurant.name }}
+                    </li>
                     {% endif %}
                     {% endfor %}
                 </ul>
             </div>
             {% endif %}
-            {% if request.user|is_owner %}
-            <a href="/business/business-info"><i class="fas fa-briefcase fullscreen-icon c-pointer"></i></a>
-            {% endif %}
-           <a href="/business/staff-management"><i class="fas fa-user-tie fullscreen-icon c-pointer"></i></a>
-
-
-            <div class="notification-bell">
-                <a href="/"><i class="fas fa-arrow-left"></i></a>
-                <!-- <div class="bell-dot"></div> -->
-            </div>
         </div>
     </div>
 
@@ -243,27 +251,6 @@
     </div>
 </div>  -->
 
-<div id="actionPanel" class="action-panel"> 
-    <div class="panel-content">
-        
-        <div class="selection-info">
-            <span id="selectedCount">0</span> Selected
-        </div>
-        
-        <div class="action-buttons">
-            {% block bottom_navigation %}
-            {% endblock %}
-
-            <button type="button" class="panel-btn" id="deselectBtn" disabled>
-                <i class="fas fa-times"></i> Deselect
-            </button>
-            
-            <!-- <button type="button" class="panel-btn btn-danger" id="deleteBtn" disabled>
-                <i class="fas fa-trash-alt"></i> Remove
-            </button> -->
-        </div>
-    </div>
-</div>
 </body>
 <script src="{% static 'Restaurants/js/base.js' %}?v=1.3"></script>
 {% block scripts %}

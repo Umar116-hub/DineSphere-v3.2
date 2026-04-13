@@ -31,6 +31,10 @@
     <div class="auth-container">
         <!-- Logo and Header -->
         <div class="logo-header">
+            <!-- Back Link -->
+            <a href="/" class="back-home-btn">
+                <i class="fas fa-arrow-left"></i> Back to Home
+            </a>
             <h1>Dine<span style="color: var(--ternary-color);">Sphere</span></h1>
             <p>Your Table, Your Sphere.</p>
         </div>
@@ -49,7 +53,7 @@
                 <div class="form-slider" id="formSlider">
 
                     <!-- Login Form (Top position by default) -->
-                    <form id="login-form" class="auth-form" method="post" action="{% url 'login' %}?next={{ next_url|default:'' }}">
+                    <form id="login-form" class="auth-form" method="post" action="{% url 'login' %}?next={{ next_url|default:'' }}" autocomplete="off">
                         {% csrf_token %}
                         <input type="hidden" name="next" value="{{ next_url|default:'' }}">
                         <div class="input-group">
@@ -65,7 +69,7 @@
 
                     <!-- Signup Form (Bottom position by default) -->
                     <form id="signup-form" class="auth-form" method="post" action="{% url 'signup' %}?next={{ next_url|default:'' }}"
-                        enctype="multipart/form-data">
+                        enctype="multipart/form-data" autocomplete="off">
                         {% csrf_token %}
                         <input type="hidden" name="next" value="{{ next_url|default:'' }}">
                         {% if active_mode == 'owner' %}
@@ -137,7 +141,16 @@
         const INITIAL_MODE = "{{ active_mode|default:'login' }}";
     </script>
     <script src="{% static 'UsersHandling/js/auth.js' %}"></script>
-    
+    <script>
+        // Set max date for DOB to today
+        document.addEventListener('DOMContentLoaded', function() {
+            const dobInput = document.querySelector('input[name="dob"]');
+            if (dobInput) {
+                const today = new Date().toISOString().split('T')[0];
+                dobInput.setAttribute('max', today);
+            }
+        });
+    </script>
 </body>
 
 </html>

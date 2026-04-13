@@ -268,3 +268,39 @@ body {
 @media (max-width: 360px) {
     .input-row { flex-direction: column; gap: 0; }
 }
+
+/* Back to Home Button */
+.back-home-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 50px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
+    position: absolute;
+    left: 0;
+    top: 1.5rem; /* Aligns with the top of the header content */
+}
+
+.back-home-btn:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--secondary-color);
+    transform: translateX(-4px);
+}
+
+@media (max-width: 600px) {
+    .back-home-btn {
+        position: static;
+        width: fit-content;
+        font-size: 0.8rem;
+        padding: 6px 12px;
+        margin-bottom: 1.5rem;
+    }
+}

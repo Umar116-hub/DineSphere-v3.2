@@ -30,9 +30,11 @@
                 {% elif request.user.is_authenticated and request.user|is_staff %}
                 <li><a href="/business">Business</a></li>
                 {% else %}
-                <li><a href="/business/registration">Register</a></li>
+                <li><a href="/uh/business-register/">Register Business</a></li>
                 {% endif %}
+                {% if request.user.is_authenticated %}
                 <li><a href="/profile">Profile</a></li>
+                {% endif %}
             </ul>
             <div class="nav-actions">
                 {% if request.user.is_authenticated %}
@@ -44,16 +46,16 @@
                         <img src="{{ request.user.image.url }}" alt="{{ request.user.username }} profile picture"
                             style="width: 40px; height: 40px; border-radius: 50%; border: 1px solid white; object-fit: cover;">
                         {% else %}
-                        <img src="https://placehold.co/40x40/008000/D88938?text={{ request.user.username|initials }}" "
-                            style=" border-radius: 50%; border: 1px solid white;">
+                        <img src="https://placehold.co/40x40/008000/D88938?text={{ request.user.username|initials }}"
+                            style="width: 40px; height: 40px; border-radius: 50%; border: 1px solid white;">
                         {% endif %}
                     </button>
                 </form>
                 {% else %}
                 <a href="/uh/auth?mode=login" class="back-to-top"
-                    style="border: 1px solid var(--secondary-color); border-radius: 8px; color: var(--primary-color); ">Login</a>
+                    style="border: 1px solid var(--secondary-color); border-radius: 50px; padding: 8px 20px; color: var(--primary-color); ">Login</a>
                 <a href="/uh/auth?mode=signup" class="back-to-top"
-                    style="border: 1px solid var(--secondary-color); border-radius: 8px; color: var(--primary-color);">Signup</a>
+                    style="border: 1px solid var(--secondary-color); border-radius: 50px; padding: 8px 20px; color: var(--primary-color);">Signup</a>
                 {% endif %}
             </div>
             <div class="nav-toggle-container">
@@ -74,8 +76,8 @@
                 <h1>Welcome Back, <span style="color: var(--ternary-color);">Owner</span></h1>
                 <div style="margin-bottom: 25px;">Manage your reservations, view analytics, and grow your business from the dashboard.</div>
                 <div style="display: flex; gap: 1rem;">
-                    <a href="/business/" class="feature-btn" style="text-decoration: none; padding: 12px 24px;">Open Business Dashboard</a>
-                    <a href="/profile" class="feature-btn" style="text-decoration: none; padding: 12px 24px; background: transparent; border: 1px solid var(--secondary-color);">Manage Profile</a>
+                    <a href="/business/" class="feature-btn" style="text-decoration: none; padding: 12px 24px; border-radius: 50px;">Open Business Dashboard</a>
+                    <a href="/profile" class="feature-btn" style="text-decoration: none; padding: 12px 24px; border-radius: 50px; background: transparent; border: 1px solid var(--secondary-color);">Manage Profile</a>
                 </div>
                 {% else %}
                 <h1>Welcome to Dine<span style="color: var(--ternary-color);">Sphere</span></h1>
@@ -91,7 +93,7 @@
                         <option value="lahore" {% if city == 'Lahore' %}selected{% endif %}>Lahore</option>
                         <option value="matli" {% if city == 'Matli' %}selected{% endif %}>Matli</option>
                     </select>
-                    <input type="text" class="search-input" id="thesearchbar" placeholder="Cuisine, restaurant name..."
+                    <input type="text" class="search-input" id="thesearchbar" placeholder="Restaurant name..."
                         name="searched-restaurant" required>
                     <button class="search-btn" type="submit">SEARCH</button>
                 </form>
@@ -194,25 +196,20 @@
 
                     <div class="floating-badge">
                         <p class="badge-title">100k+ Verified Users</p>
-
                         <div class="user-list">
                             {% for user in three_users %}
                             <div class="user-item">
-                                <div class="testimonial-header">
                                 {% if user.user.image %}
-                                <img src="{{user.user.image.url}}" alt="User">
+                                <img src="{{user.user.image.url}}" alt="User Profile">
                                 {% else %}
-                                <img src="https://placehold.co/60x60/008000/ffffff?text={{ user.user.username|slice:":1" }}" alt="User">
+                                <img src="https://placehold.co/60x60/008000/ffffff?text={{ user.user.username|slice:":1" }}" alt="User Initial">
                                 {% endif %}
-                                <span class="testimonial-name">{{user.user.username}}</span>
-                            </div>
-                                <div>
+                                <div class="user-info">
                                     <p class="user-name">{{user.user.username}}</p>
-                                    <p class="user-role"></p>
+                                    <p class="user-role">Verified Gourmet</p>
                                 </div>
                             </div>
                             {% endfor %}
-
                         </div>
                     </div>
                 </div>
@@ -220,7 +217,7 @@
 
             <div class="feature-text-block">
                 <h2 class="feature-heading">The best <span class="highlight">platform</span> to connect with
-                    your audeince.</h2>
+                    your audience.</h2>
                 <p class="feature-desc">
                     Just like we said before, we have tons of features to manage your dining preferences,
                     monthly restaurant visits, and effortless reservations.
@@ -260,7 +257,9 @@
             {% else %}
             <li><a href="/uh/business-register/">Register Business</a></li>
             {% endif %}
+            {% if request.user.is_authenticated %}
             <li><a href="/profile">Profile</a></li>
+            {% endif %}
             {% if request.user.is_authenticated %}
             <li><a href="{% url 'logout' %}">Logout</a></li>
             {% else %}

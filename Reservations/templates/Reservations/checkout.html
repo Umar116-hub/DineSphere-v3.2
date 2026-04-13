@@ -111,8 +111,12 @@
                     <!-- Accordion Header/Summary -->
                     <div class="product-details">
                         <div class="product-info-group">
-                            <!-- Placeholder Image 1 -->
-                            <img src="https://placehold.co/70x70/ffffff/111827?text=Hair+Dryer" onerror="this.src='https://placehold.co/70x70/ffffff/111827?text=Item';" class="product-img" alt="Nano Titanium Hair Dryer">
+                            <!-- Restaurant Image -->
+                            {% if restaurant_image %}
+                                <img src="{{ restaurant_image }}" class="product-img" alt="{{ name }}">
+                            {% else %}
+                                <i class="fas fa-utensils product-img" style="display: flex; align-items: center; justify-content: center; background: #eee; font-size: 1.5rem; color: #666; width: 70px; height: 70px; border-radius: 8px;"></i>
+                            {% endif %}
                             <div>
                                 <p class="product-name">{{name}}</p>
                                 <p class="product-description">Best Local Restaurant Ideal for burgers</p>

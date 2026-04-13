@@ -11,7 +11,7 @@ const footer = `
                     Dine<span style="color: var(--ternary-color);">Sphere</span>
                 </div>
                 <p>
-                    Empowering physicians with advanced multi-modal tools to improve treatment selection and patient outcomes.
+                    Connecting food enthusiasts with the city's finest dining spots. Simple reservations, real reviews, and exclusive experiences.
                 </p>
 
                 <div class="social-icons">
@@ -29,13 +29,11 @@ const footer = `
             <div>
                 <h3 class="footer-col-title">Site Map</h3>
                 <ul class="footer-link-list">
-                    <li><a href="#">Homepage</a></li>
-                    <li><a href="#">Technology</a></li>
-                    <li><a href="#">Ataraxis Breast</a></li>
-                    <li><a href="#">Resources & news</a></li>
-                    <li><a href="#">Careers</a></li>
-                    <li><a href="#">Contact Us</a></li>
-                    <li><a href="#">Portal</a></li>
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/#who">About Us</a></li>
+                    <li><a href="/uh/business-register/">Join as Partner</a></li>
+                    <li><a href="/uh/auth?mode=signup">Create Account</a></li>
+                    <li><a href="/profile">My Profile</a></li>
                 </ul>
             </div>
 

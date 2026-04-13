@@ -594,6 +594,7 @@
 @media (max-width: 900px) {
     .main-grid {
         grid-template-columns: 1fr;
+        padding: 5px; /* Safe padding for mobile */
     }
     
     /* Reset all explicit grid placements on mobile so things just stack naturally */
@@ -607,14 +608,52 @@
         width: 100% !important;
         box-sizing: border-box;
     }
-    
-    .demographics {
-        flex-direction: column;
-        gap: 15px;
+
+    .approval-notification {
+        width: 100% !important;
+        box-sizing: border-box;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
     }
     
+    .demographics {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 15px;
+        justify-content: flex-start;
+    }
+    
+    .demographic-item {
+        text-align: left;
+        flex: 1 1 30%;
+        min-width: 80px;
+    }
+
+    .total-likes-value {
+        font-size: 1.8rem; /* Scale down slightly on mobile */
+        margin-bottom: 5px;
+    }
+
+    /* Logs Table Responsiveness */
+    .post-table-row {
+        grid-template-columns: 48px 1fr 60px 40px 40px; /* Reduced columns to fit mobile */
+        gap: 8px;
+        padding: 12px 0;
+    }
+
+    /* Hide text labels on mobile to save horizontal space */
+    .table-icon-label-group .value,
+    .percentage-change a {
+        display: none !important;
+    }
+
+    .table-tag {
+        font-size: 0.7rem;
+        padding: 4px 8px;
+    }
+
     .post-stats-graph-container {
         height: auto;
-        min-height: 150px;
+        min-height: 120px; /* Reduced from 150px to save space */
     }
 }

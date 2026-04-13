@@ -257,7 +257,7 @@ nav p {
 
 .city-select {
     border: none;
-    padding: 12px 16px;
+    padding: 8px 16px;
     font-size: 16px;
     outline: none;
     background: #fff;
@@ -267,7 +267,7 @@ nav p {
 .search-input {
     flex: 1;
     border: none !important;
-    padding: 12px 16px;
+    padding: 8px 16px;
     font-size: 16px;
     color: #333;
 
@@ -282,7 +282,7 @@ nav p {
     background: var(--secondary-color);
     color: var(--primary-color);
     border: none;
-    padding: 14px 24px;
+    padding: 10px 24px;
     font-size: 16px;
     font-weight: bold;
     transition: background 0.3s;
@@ -485,17 +485,31 @@ nav p {
     .city-select,
     .search-input,
     .search-btn {
-        width: 100%;
-        border-radius: 8px;
-        margin-bottom: 8px;
-        padding: 14px 16px;
+        width: 90%;
+        max-width: 350px;
+        height: 42px; /* Standardize height */
+        margin: 0 auto 10px auto;
+        border-radius: 50px;
+        padding: 0 20px; /* Horizontal padding only */
         box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+        display: block;
+        line-height: 42px; /* Center text vertically */
     }
 
     .city-select,
     .search-input {
-        border: none;
-        border-right: none;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+    }
+
+    .city-select option {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .search-input::placeholder {
+        color: rgba(255, 255, 255, 0.6);
     }
 
     .search-btn {

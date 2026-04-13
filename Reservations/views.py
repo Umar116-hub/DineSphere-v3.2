@@ -76,7 +76,8 @@ def checkout_view(request):
         "start_time": booking.booking_start_datetime.strftime("%H:%M"),
         "end_time": booking.booking_end_datetime.strftime("%H:%M"),
         "date": booking.booking_start_datetime.strftime("%Y-%m-%d"),
-        "tables": booking.tables.all()
+        "tables": booking.tables.all(),
+        "restaurant_image": booking.restaurant.image.url if booking.restaurant.image else None
     }
     
     return render(request, "Reservations/checkout.html", context)
@@ -168,13 +169,24 @@ def post_review(request, Restaurant_name):
         
         # Save review to your model
         restaurant = get_object_or_404(Restaurant, name=Restaurant_name.replace("_", " "))
-        Review.objects.create(
+        review = Review.objects.create(
             restaurant=restaurant,
             user=request.user,
             rating=rating,
             comment=text,
-            on_display=False
+            on_display=True  # Make it visible immediately
         )
+
+        # Update ReviewSummary
+        from Restaurants.models import ReviewSummary
+        summary, created = ReviewSummary.objects.get_or_create(restaurant=restaurant)
+        rating_int = int(rating)
+        if rating_int == 5: summary.five_star += 1
+        elif rating_int == 4: summary.four_star += 1
+        elif rating_int == 3: summary.three_star += 1
+        elif rating_int == 2: summary.two_star += 1
+        elif rating_int == 1: summary.one_star += 1
+        summary.save()
 
         return JsonResponse({"success": True})
 

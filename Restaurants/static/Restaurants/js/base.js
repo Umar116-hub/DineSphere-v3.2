@@ -216,60 +216,100 @@ triggerUpdate('tables', selectedId, formData);
 
 document.addEventListener('DOMContentLoaded', () => {
     const cards = document.querySelectorAll('.clickable-card');
-    const deselectBtn = document.getElementById('deselectBtn');
     const deleteBtn = document.getElementById('deleteBtn');
     const selectedCountText = document.getElementById('selectedCount');
     const actionPanel = document.getElementById('actionPanel');
     const actionButtons = document.querySelector('.action-buttons');
 
-    // Count visible buttons excluding the Deselect button to check for "Permanent" buttons
-    const permanentButtons = actionButtons.querySelectorAll('.panel-btn:not(#deselectBtn)').length;
+    let isSelectionMode = false;
+    let longPressTimer;
+
+    const isTablesPage = window.location.pathname.includes('/business/tables/');
+    const permanentButtons = actionButtons ? actionButtons.querySelectorAll('.panel-btn').length : 0;
 
     const syncUI = () => {
         const selectedCards = document.querySelectorAll('.clickable-card.selected');
         const count = selectedCards.length;
 
-        selectedCountText.innerText = count;
+        if (selectedCountText) selectedCountText.innerText = count;
 
         if (count > 0) {
-            // 1. Enable Buttons
-            deselectBtn.disabled = false;
             if (deleteBtn) deleteBtn.disabled = false;
-
-            // 2. Show panel if it's in "Floating" mode (No permanent buttons)
-            if (permanentButtons === 0) {
-                actionPanel.classList.add('show');
-            }
         } else {
-            // 1. Disable Buttons
-            deselectBtn.disabled = true;
             if (deleteBtn) deleteBtn.disabled = true;
-
-            // 2. Hide panel if it's in "Floating" mode
-            if (permanentButtons === 0) {
-                actionPanel.classList.remove('show');
-            }
         }
     };
 
-    // Card Click Logic
-    cards.forEach(card => {
-        card.addEventListener('click', () => {
-            const isAlreadySelected = card.classList.contains('selected');
-            cards.forEach(c => c.classList.remove('selected'));
-            if (!isAlreadySelected) card.classList.add('selected');
-            syncUI();
-        });
-    });
+    const enterSelectionMode = () => {
+        if (isSelectionMode) return;
+        isSelectionMode = true;
+        actionPanel.classList.add('show');
+        
+        // Push state for back button handling
+        if (window.history.state?.selection !== true) {
+            window.history.pushState({ selection: true }, '');
+        }
+    };
 
-    // Deselect Logic
-    deselectBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
+    const exitSelectionMode = (fromPopState = false) => {
+        isSelectionMode = false;
         cards.forEach(c => c.classList.remove('selected'));
-        syncUI();
+        selectedCountText.innerText = '0';
+        
+        if (permanentButtons === 0) {
+            actionPanel.classList.remove('show');
+        }
+
+        if (!fromPopState && window.history.state?.selection === true) {
+            window.history.back();
+        }
+    };
+
+    // Handle Back Button
+    window.addEventListener('popstate', (event) => {
+        if (isSelectionMode) {
+            exitSelectionMode(true);
+        }
     });
 
-    // Handle initial state: If permanent buttons exist, keep it shown
+    // Card Click/Tap Logic
+    cards.forEach(card => {
+        // Desktop Click / Mobile selection toggle
+        card.addEventListener('click', (e) => {
+            if (isSelectionMode || permanentButtons > 0) {
+                const isAlreadySelected = card.classList.contains('selected');
+                card.classList.toggle('selected');
+                syncUI();
+            } else {
+                // Not in selection mode
+                card.classList.add('selected');
+                enterSelectionMode();
+                syncUI();
+            }
+        });
+
+        // Long Press detection
+        card.addEventListener('touchstart', (e) => {
+            if (isSelectionMode) return;
+            longPressTimer = setTimeout(() => {
+                card.classList.add('selected');
+                enterSelectionMode();
+                syncUI();
+                // Vibrate if supported
+                if (navigator.vibrate) navigator.vibrate(50);
+            }, 600); // 600ms for long press
+        }, { passive: true });
+
+        card.addEventListener('touchend', () => {
+            clearTimeout(longPressTimer);
+        }, { passive: true });
+
+        card.addEventListener('touchmove', () => {
+            clearTimeout(longPressTimer);
+        }, { passive: true });
+    });
+
+    // Handle initial state
     if (permanentButtons > 0) {
         actionPanel.classList.add('show');
     }
