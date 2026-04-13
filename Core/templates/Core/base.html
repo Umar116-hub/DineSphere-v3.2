@@ -16,29 +16,33 @@
 
     <title>{% block title %}{% endblock title %}</title>
 </head>
-<body style="position: relative;">
+<body style="position: relative;" data-authenticated="{{ request.user.is_authenticated|yesno:'true,false' }}">
     <!-- Global Page Loader -->
     <div id="global-loader">
         <div class="loader-logo">⧲ DineSphere</div>
         <div class="loader-spinner"></div>
     </div>
     <script>
-        // Dismiss loader as soon as DOM is ready
-        document.addEventListener('DOMContentLoaded', function() {
+        var _loaderStart = Date.now();
+        var IS_AUTHENTICATED = document.body.getAttribute('data-authenticated') === 'true';
+
+        function dismissLoader() {
             var loader = document.getElementById('global-loader');
-            if (loader) {
+            if (!loader) return;
+            var elapsed = Date.now() - _loaderStart;
+            var remaining = Math.max(0, 1000 - elapsed);
+            setTimeout(function() {
                 loader.classList.add('loader-fade-out');
                 setTimeout(function() { loader.style.display = 'none'; }, 400);
-            }
-        });
-        // Also dismiss on back-button (bfcache)
+            }, remaining);
+        }
+
+        document.addEventListener('DOMContentLoaded', dismissLoader);
+
         window.addEventListener('pageshow', function(e) {
             if (e.persisted) {
-                var loader = document.getElementById('global-loader');
-                if (loader) {
-                    loader.classList.add('loader-fade-out');
-                    setTimeout(function() { loader.style.display = 'none'; }, 400);
-                }
+                _loaderStart = Date.now();
+                dismissLoader();
             }
         });
     </script>
@@ -59,9 +63,7 @@
     {% endblock footer %}
     
     
-    <script>
-        const IS_AUTHENTICATED = {{ request.user.is_authenticated|yesno:"true,false" }};
-    </script>
+
     <script src="{% static 'Core/js/crousels.js' %}?v=1.1"></script>
     <script>
         // Show loader on navigation away
