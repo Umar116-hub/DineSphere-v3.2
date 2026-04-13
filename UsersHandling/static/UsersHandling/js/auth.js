@@ -102,18 +102,26 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // 2. Tab initialization and persistence
-    if (typeof INITIAL_MODE !== 'undefined' && INITIAL_MODE) {
-        // Switch with a small delay to ensure DOM is ready for height calculation
-        setTimeout(() => switchMode(INITIAL_MODE), 50);
-    } else {
-        const urlParams = new URLSearchParams(window.location.search);
-        const initialMode = urlParams.get('mode');
-        if (initialMode && (initialMode === 'signup' || initialMode === 'owner')) {
-            setTimeout(() => switchMode(initialMode), 50);
+    const initAuthMode = () => {
+        const mode = (typeof INITIAL_MODE !== 'undefined' && INITIAL_MODE) || 
+                     (new URLSearchParams(window.location.search)).get('mode') || 
+                     'login';
+        
+        // Ensure heights are calculated before switching
+        calculateFormHeights();
+        if (loginHeight === 0 || signupHeight === 0) {
+            // If still 0, retry in a bit
+            setTimeout(initAuthMode, 50);
+            return;
         }
-    }
+        
+        switchMode(mode);
+    };
+
+    // Run initialization with a few attempts to ensure forms are rendered
+    initAuthMode();
+    setTimeout(initAuthMode, 150); // Second pass for stability
 
     // Final insurance for height on dynamic content
-    setTimeout(calculateFormHeights, 100);
     window.addEventListener('resize', calculateFormHeights);
 });

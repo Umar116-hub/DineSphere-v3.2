@@ -36,8 +36,8 @@
         </div>
 
         <div class="auth-toggle-buttons">
-            <button id="login-btn" class="toggle-btn active" data-mode="login">LOGIN</button>
-            <button id="signup-btn" class="toggle-btn" data-mode="signup">SIGNUP</button>
+            <button id="login-btn" class="toggle-btn {% if active_mode != 'signup' %}active{% endif %}" data-mode="login">LOGIN</button>
+            <button id="signup-btn" class="toggle-btn {% if active_mode == 'signup' %}active{% endif %}" data-mode="signup">SIGNUP</button>
         </div>
 
         <!-- Form Card (The Visual Container) -->
