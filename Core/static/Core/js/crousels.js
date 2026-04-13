@@ -15,6 +15,10 @@ function updateFavouritesUI() {
 }
 function toggleFavorite(event, restaurantId) {
     event.stopPropagation();
+    if (!IS_AUTHENTICATED) {
+        showNotification('Please login to add to favourites!');
+        return;
+    }
     updateFavouritesUI()
     const btn = event.currentTarget;
     const icon = btn.querySelector('i');
