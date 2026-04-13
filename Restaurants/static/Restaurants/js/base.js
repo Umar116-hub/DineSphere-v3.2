@@ -1,3 +1,12 @@
+// Show loader on refresh/navigation
+window.addEventListener('beforeunload', () => {
+    const loader = document.getElementById('page-loader');
+    if (loader) {
+        loader.style.display = 'flex';
+        loader.classList.remove('fade-out');
+    }
+});
+
 // Select all nav items
 const navItems = document.querySelectorAll('.nav-links .nav-item');
 
