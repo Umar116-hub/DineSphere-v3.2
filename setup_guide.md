@@ -17,6 +17,7 @@ Ensure the following are installed:
 **Using HTTPS:**
 ```bash
 git clone https://github.com/Umar116-hub/DineSphere-v3.2/tree/fix/full-project-overhaul
+
 cd DineSphere-v3
 ```
 

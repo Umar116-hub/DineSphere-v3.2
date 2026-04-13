@@ -1,4 +1,24 @@
- // Select all nav items
+// Page Loader Handling
+window.addEventListener('load', () => {
+    const loader = document.getElementById('page-loader');
+    if (loader) {
+        loader.classList.add('fade-out');
+        setTimeout(() => {
+            loader.style.display = 'none';
+        }, 400); // Match CSS transition
+    }
+});
+
+// Show loader on refresh/navigation
+window.addEventListener('beforeunload', () => {
+    const loader = document.getElementById('page-loader');
+    if (loader && !window.location.protocol.startsWith('mailto')) {
+        loader.style.display = 'flex';
+        loader.classList.remove('fade-out');
+    }
+});
+
+// Select all nav items
   const navItems = document.querySelectorAll('.nav-links .nav-item');
 
   navItems.forEach(item => {
