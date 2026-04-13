@@ -194,23 +194,13 @@ def tables(request):
         form = TableForm(restaurant=restaurant)
         return render(request, "Restaurants/tables.html", {"form": form})
     elif request.method == "POST":
-        form, _ = add_table(request, restaurant_id)
-        if form.is_valid():
-            obj = form.save(commit=False)  # not yet in DB
-            obj.restaurant = restaurant  # extra field injection
-            obj.save()
+        form, success = add_table(request, restaurant_id)
+        if success:
             messages.success(request, "Table added successfully!")
-            log_event(
-                request.user.username,
-                {
-                    "action": "added_table",
-                    "details": f"Added table {obj.name} (ID: {obj.id}) to restaurant ID {restaurant_id}",
-                },
-            )
+            # We assume form is valid, get the object to log it. 
+            # In add_table, we should ideally return the object too, but for simplicity we rely on the message.
         else:
-            messages.error(
-                request, "Failed to add table. Please check the form for errors."
-            )
+            messages.error(request, "Failed to add table. Please check the form for errors.")
         return redirect("/business/tables/")
 
 

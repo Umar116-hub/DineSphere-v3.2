@@ -237,6 +237,13 @@ function formatTimeTo24h(timeStr) {
 
 // --- Inside your form submit listener ---
 form.addEventListener('submit', async (e) => {
+    // PREVENT DOUBLE CLICKS: Disable submit button globally
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    }
+
     if (form.action.includes('/update/')) {
         e.preventDefault();
         
@@ -281,8 +288,16 @@ form.addEventListener('submit', async (e) => {
 
         const result = await response.json();
         if (result.status === 'success') location.reload();
-        else alert("Update failed!");
+        else {
+            alert("Update failed!");
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Save Changes';
+            }
+        }
     }
+    // If it's NOT an /update/ action (e.g. adding a table), it simply proceeds 
+    // with the normal HTML form POST, but the button is safely disabled!
 });
 });
 
