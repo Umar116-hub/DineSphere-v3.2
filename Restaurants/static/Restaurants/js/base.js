@@ -1,11 +1,5 @@
-// Show loader on refresh/navigation
-window.addEventListener('beforeunload', () => {
-    const loader = document.getElementById('page-loader');
-    if (loader) {
-        loader.style.display = 'flex';
-        loader.classList.remove('fade-out');
-    }
-});
+// Loader is handled by the inline script in base.html
+// No need to re-show on beforeunload — that causes infinite loading bugs
 
 // Select all nav items
 const navItems = document.querySelectorAll('.nav-links .nav-item');
