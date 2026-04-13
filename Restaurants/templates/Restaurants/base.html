@@ -25,18 +25,18 @@
         /* Loader Critical CSS - Inlined for instant spin */
         #page-loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: #0c1b18; /* var(--main-bg) */
+            background-color: #f3f4f6; /* var(--main-bg) */
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             z-index: 100000; transition: opacity 0.3s ease;
         }
         .loader-logo {
-            font-size: 2.5rem; font-weight: 800; color: #10b981; /* var(--primary-color) */
+            font-size: 2.5rem; font-weight: 800; color: hsl(173, 100%, 20%); /* var(--primary-color) */
             margin-bottom: 20px; animation: pulse 1.5s ease-in-out infinite;
         }
         .loader-spinner {
             width: 40px; height: 40px;
-            border: 4px solid #1f2937; /* var(--secondary-color) */
-            border-top: 4px solid #111827; /* var(--ternary-color) */
+            border: 4px solid hsl(148, 100%, 92%); /* var(--secondary-color) */
+            border-top: 4px solid hsl(30, 80%, 55%); /* var(--ternary-color) */
             border-radius: 50%; animation: spin 1s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
