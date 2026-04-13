@@ -40,25 +40,35 @@
     {% endblock footer %}
     
     
-    <script src="{% static 'Core/js/crousels.js' %}"></script>
     <script>
         const IS_AUTHENTICATED = {{ request.user.is_authenticated|yesno:"true,false" }};
-        
-        // Page Loader logic
+    </script>
+    <script src="{% static 'Core/js/crousels.js' %}?v=1.1"></script>
+    <script>
+        // Page Loader — hide on load
         window.addEventListener('load', () => {
             const loader = document.getElementById('global-loader');
             if (loader) {
                 loader.classList.add('loader-fade-out');
-                setTimeout(() => {
-                    loader.style.display = 'none';
-                }, 400); 
+                setTimeout(() => { loader.style.display = 'none'; }, 400);
             }
         });
 
-        // Show loader on refresh/navigation
+        // Fix: hide loader when user presses browser Back button (bfcache)
+        window.addEventListener('pageshow', (e) => {
+            if (e.persisted) {
+                const loader = document.getElementById('global-loader');
+                if (loader) {
+                    loader.classList.add('loader-fade-out');
+                    setTimeout(() => { loader.style.display = 'none'; }, 400);
+                }
+            }
+        });
+
+        // Show loader on navigation away
         window.addEventListener('beforeunload', () => {
             const loader = document.getElementById('global-loader');
-            if (loader && !window.location.protocol.startsWith('mailto')) {
+            if (loader) {
                 loader.style.display = 'flex';
                 loader.classList.remove('loader-fade-out');
             }
