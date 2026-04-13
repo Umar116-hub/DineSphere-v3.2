@@ -590,3 +590,31 @@
     background: #f9fafb;
     outline: none;
 }
+
+@media (max-width: 900px) {
+    .main-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    /* Reset all explicit grid placements on mobile so things just stack naturally */
+    .card, 
+    .post-stats-card, 
+    .overall-satisfaction-card,
+    .analytics-table-container,
+    .dynamic-form-container {
+        grid-column: 1 / -1 !important;
+        grid-row: auto !important;
+        width: 100% !important;
+        box-sizing: border-box;
+    }
+    
+    .demographics {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .post-stats-graph-container {
+        height: auto;
+        min-height: 150px;
+    }
+}
