@@ -1,93 +1,46 @@
 # 📦 Project Setup Guide
 
-This document provides step-by-step instructions to clone, set up, and run the project in a local development environment.
+This document provides step-by-step instructions to clone, set up, and run the project in a local development environment. DineSphere requires practically zero configuration because it relies on standard Python packages and a local SQLite database!
 
 ---
 
 ## 🚀 Prerequisites
 
 Ensure the following are installed:
-
 * Python (>= 3.8 recommended)
-* MongoDB
 * Git
-* `pip` (Python package manager)
 
 ---
 
 ## 📥 1. Clone Repository  
 
-### Using HTTPS
-
+**Using HTTPS:**
 ```bash
-git clone https://github.com/Abdullah-elfoe/DineSphere-v3.git
+git clone https://github.com/Umar116-hub/DineSphere-v3.2/tree/fix/full-project-overhaul
 cd DineSphere-v3
-```
-
-### Using SSH
-
-```bash
-git clone git@github.com:Abdullah-elfoe/DineSphere-v3.git
-cd DineSphere-v3
-```
----
-
-## ⚙️ 2. Start MongoDB Service
-
-### Linux
-
-```bash
-sudo systemctl start mongod
-```
-
-### macOS (Homebrew)
-
-```bash
-brew services start mongodb-community
-```
-
-### Windows
-
-```powershell
-net start MongoDB
 ```
 
 ---
 
-## 🐍 3. Create Virtual Environment  
+## 🐍 2. Create & Activate Virtual Environment  
 
-### Linux / macOS
-
-```bash
-python3 -m venv venv
-```
-
-### Windows
-
+**Windows:**
 ```powershell
 python -m venv venv
-```
-
----
-
-## ▶️ 4. Activate Virtual Environment  
-
-### Linux / macOS
-
-```bash
-source venv/bin/activate
-```
-
-### Windows
-
-```powershell
 venv\Scripts\activate
 ```
 
+**macOS / Linux:**
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
 ---
 
-## 📦 5. Install Dependencies  
+## 📦 3. Install Dependencies  
 
+Ensure you are inside your virtual environment, then install all project requirements:
 ```bash
 pip install --upgrade pip
 pip install -r requirements.txt
@@ -95,70 +48,35 @@ pip install -r requirements.txt
 
 ---
 
-## 🗄️ 6. Apply Migrations
+## 🗄️ 4. Apply Migrations
 
+Set up the default SQLite database:
 ```bash
+python manage.py makemigrations
 python manage.py migrate
 ```
 
----
-
-## 👤 7. Create Superuser (Optional)
-
+*(Optional)* Create an admin account to access the backend control panel:
 ```bash
 python manage.py createsuperuser
 ```
 
 ---
 
-## ▶️ 8. Run Django Development Server
+## ▶️ 5. Run Development Server
 
+Start the application!
 ```bash
 python manage.py runserver
 ```
 
----
-
-## 🌐 Access the Application
-
-Open your browser and go to:
-
-```
-http://127.0.0.1:8000/
-```
-
----
-
-## ✅ Setup Checklist
-
-* [ ] Repository cloned
-* [ ] MongoDB service running
-* [ ] Virtual environment created
-* [ ] Virtual environment activated
-* [ ] Dependencies installed
-* [ ] Database migrations applied
-* [ ] Development server running
-
----
-
-## ⚠️ Additional Notes
-
-* Configure MongoDB connection settings in your project.
-* Add a `.env` file if your project depends on environment variables.
-* Use `deactivate` to exit the virtual environment.
+**🌐 Access the Application:**
+Open your browser and navigate to `http://127.0.0.1:8000/`
 
 ---
 
 ## 🛠 Troubleshooting
 
-* **Git issues (SSH)**: Ensure SSH keys are configured (`ssh-keygen` + add to GitHub).
-* **MongoDB not starting**: Verify installation and service status.
-* **Module errors**: Ensure virtual environment is active.
-* **Port already in use**:
-
-  ```bash
-  python manage.py runserver 8001
-  ```
-
----
-
+* **Server crashes on launch**: Make sure your virtual environment `(venv)` is activated.
+* **Port 8000 already in use**: Try starting the server on a different port using `python manage.py runserver 8001`
+* **Static files missing**: If CSS/JS are weird, run `python manage.py collectstatic` (only necessary for production deployments).

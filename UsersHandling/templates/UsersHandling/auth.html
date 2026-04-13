@@ -35,11 +35,9 @@
             <p>Your Table, Your Sphere.</p>
         </div>
 
-        <!-- Toggle Buttons -->
         <div class="auth-toggle-buttons">
             <button id="login-btn" class="toggle-btn active" data-mode="login">LOGIN</button>
             <button id="signup-btn" class="toggle-btn" data-mode="signup">SIGNUP</button>
-            <button id="owner-btn" class="toggle-btn owner-btn" data-mode="owner">🍽️ LIST RESTAURANT</button>
         </div>
 
         <!-- Form Card (The Visual Container) -->
@@ -119,58 +117,7 @@
                         <button type="submit" class="submit-btn">SIGNUP</button>
                     </form>
 
-                    <!-- Owner Registration Form (same as signup, but with intent=owner) -->
-                    <form id="owner-form" class="auth-form" method="post" action="{% url 'signup' %}?next={{ next_url|default:'' }}"
-                        enctype="multipart/form-data" style="display:none;">
-                        {% csrf_token %}
-                        <input type="hidden" name="intent" value="owner">
-                        <input type="hidden" name="next" value="{{ next_url|default:'' }}">
 
-                        <p style="font-size:13px;opacity:0.8;margin-bottom:12px;text-align:center;">
-                            <strong>Step 1 of 2:</strong> Create your account, then register your restaurant.
-                        </p>
-
-                        <div class="input-group">
-                            <i class="fas fa-envelope"></i>
-                            <input type="email" name="signup_email" placeholder="Email Address" value="{{ email|default:'' }}" autocomplete="email" required>
-                        </div>
-
-                        <div class="input-group">
-                            <i class="fas fa-user-plus"></i>
-                            <input type="text" name="signup_username" placeholder="Desired Username" value="{{ username|default:'' }}" autocomplete="username" required>
-                        </div>
-
-                        <div class="input-row">
-                            <div class="input-group">
-                                <i class="fas fa-venus-mars"></i>
-                                <select name="gender" required>
-                                    <option value="" disabled selected>Gender</option>
-                                    <option value="male" {% if gender == 'male' %}selected{% endif %}>Male</option>
-                                    <option value="female" {% if gender == 'female' %}selected{% endif %}>Female</option>
-                                    <option value="other" {% if gender == 'other' %}selected{% endif %}>Other</option>
-                                </select>
-                            </div>
-                            <div class="input-group">
-                                <i class="fas fa-calendar-alt"></i>
-                                <input type="date" name="dob" value="{{ dob|default:'' }}" required title="Date of Birth">
-                            </div>
-                        </div>
-
-                        <div class="input-group">
-                            <i class="fas fa-lock"></i>
-                            <input type="password" name="signup_password" class="password-input" placeholder="Create Password" autocomplete="new-password" required>
-                        </div>
-
-                        <!-- Real-time Password Checklist -->
-                        <div class="password-requirements" id="owner-requirements">
-                            <div class="requirement" data-criterion="length"><i class="fas fa-circle"></i> At least 8 characters</div>
-                            <div class="requirement" data-criterion="upper"><i class="fas fa-circle"></i> One uppercase letter</div>
-                            <div class="requirement" data-criterion="lower"><i class="fas fa-circle"></i> One lowercase letter</div>
-                            <div class="requirement" data-criterion="number"><i class="fas fa-circle"></i> One number</div>
-                        </div>
-
-                        <button type="submit" class="submit-btn" style="background:linear-gradient(135deg,#d4a017,#e8621a);">CREATE ACCOUNT & CONTINUE →</button>
-                    </form>
 
                 </div>
             </div>
