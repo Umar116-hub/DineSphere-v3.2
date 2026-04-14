@@ -15,6 +15,7 @@ This document specifies the software and hardware environments required to run a
 
 ### 3. Key Dependencies
 - **python-dotenv**: Essential for loading environment variables.
+- **Environment Config**: A pre-configured `.env` is included in the root directory for "zero-config" setup.
 - **Pillow**: Required for restaurant image handling (banners/profiles).
 - **Pymongo**: Required if connecting to a MongoDB instance.
 - **Brevo SMTP**: Recommended service for sending reservation and cancellation emails.

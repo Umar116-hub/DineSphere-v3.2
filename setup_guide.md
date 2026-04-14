@@ -49,17 +49,11 @@ pip install -r requirements.txt
 
 ## 🔑 4. Environment Configuration  
 
-DineSphere uses environment variables for sensitive settings like emails and security keys.
+**DineSphere now includes a pre-configured `.env` file!** 
 
-1. **Copy the example file:**
-   ```bash
-   cp .env.example .env
-   ```
-   *(On Windows, use `copy .env.example .env`)*
+For standard local development, you do not need to do anything. The email system, database settings, and security keys are already set up to work right out of the box.
 
-2. **Open `.env`** in your text editor and fill in your details:
-   - **SMTP Settings**: Required for sending confirmation emails. We recommend [Brevo](https://www.brevo.com/).
-   - **Secret Key**: You can keep the default for local development.
+*If you need to use your own SMTP (Email) or MongoDB settings, you can edit the `.env` file in the root directory.*
 
 ---
 

@@ -62,8 +62,9 @@ Thumbs.db
 # =========================
 # Environment variables
 # =========================
-.env
-*.env
+# User opted to track .env for easier setup
+# .env
+# *.env
 
 # =========================
 # Logs
