@@ -156,10 +156,12 @@
                 <div class="form-group">
                     <label>Table Name</label>
                     {{ form.name }}
+                    <div class="error-text">{{ form.name.errors }}</div>
                 </div>
                 <div class="form-group">
                     <label>Base Price ($)</label>
                     {{ form.base_price }}
+                    <div class="error-text">{{ form.base_price.errors }}</div>
                 </div>
             </div>
         </div>
@@ -170,10 +172,12 @@
                 <div class="form-group">
                     <label>Table Size (Capacity)</label>
                     {{ form.table_size }}
+                    <div class="error-text">{{ form.table_size.errors }}</div>
                 </div>
                 <div class="form-group">
                     <label>Seating Type</label>
                     {{ form.seating_type }}
+                    <div class="error-text">{{ form.seating_type.errors }}</div>
                 </div>
             </div>
         </div>

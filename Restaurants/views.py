@@ -187,8 +187,12 @@ def analytics(request, tab=None):
 
 @restrict_access
 def tables(request):
-    restaurant_id = request.session["selected_restaurant_id"]
-    restaurant = Restaurant.objects.get(id=restaurant_id)
+    restaurant_id = request.session.get("selected_restaurant_id")
+    if not restaurant_id:
+        messages.error(request, "Please select a restaurant first.")
+        return redirect("analytics")
+        
+    restaurant = get_object_or_404(Restaurant, id=restaurant_id)
     if request.method == "GET":
         form = TableForm(restaurant=restaurant)
         return render(request, "Restaurants/tables.html", {"form": form})
@@ -196,11 +200,11 @@ def tables(request):
         form, success = add_table(request, restaurant_id)
         if success:
             messages.success(request, "Table added successfully!")
-            # We assume form is valid, get the object to log it. 
-            # In add_table, we should ideally return the object too, but for simplicity we rely on the message.
+            return redirect("/business/tables/")
         else:
             messages.error(request, "Failed to add table. Please check the form for errors.")
-        return redirect("/business/tables/")
+            # We return render instead of redirect to keep the form object (and its errors) alive
+            return render(request, "Restaurants/tables.html", {"form": form})
 
 
 @restrict_access
@@ -235,10 +239,15 @@ def holidays(request):
                 },
             )
             messages.success(request, "Holiday added successfully!")
+            return redirect("/business/holidays/")
         else:
             messages.error(request, "Failed to add holiday.")
-
-        return redirect("/business/holidays/")
+            special_days = SpecialDay.objects.filter(restaurant=restaurant)
+            return render(
+                request,
+                "Restaurants/holidays.html",
+                {"form": form, "special_days": special_days},
+            )
 
 @restrict_access
 def reviews(request):
@@ -263,10 +272,13 @@ def reviews(request):
             obj.save()
 
             messages.success(request, "Review added successfully!")
+            return redirect("/business/reviews/")
         else:
             messages.error(request, "Failed to add review. Please check the form.")
-
-        return redirect("/business/reviews/")
+            reviews_list = Review.objects.filter(restaurant=restaurant)
+            return render(
+                request, "Restaurants/reviews.html", {"form": form, "reviews": reviews_list}
+            )
 
 @restrict_access
 def business_info(request):
@@ -401,9 +413,12 @@ def markcancel(request):
             
             # Send Email to Customer
             from Reservations.services import send_booking_cancellation_email
-            send_booking_cancellation_email(booking, cancelled_by='staff', reason=reason)
+            email_sent, error_msg = send_booking_cancellation_email(booking, cancelled_by='staff', reason=reason)
             
-            messages.success(request, f"Booking cancelled. Email sent to {booking.customer.email}.")
+            if email_sent:
+                messages.success(request, f"Booking cancelled. Email sent to {booking.customer.email}.")
+            else:
+                messages.warning(request, f"Booking cancelled, but email delivery failed: {error_msg}. Please notify the customer manually.")
         except Exception as e:
             messages.error(request, str(e))
 

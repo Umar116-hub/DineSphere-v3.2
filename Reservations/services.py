@@ -405,9 +405,10 @@ def send_booking_confirmation_email(booking):
         )
         msg.attach_alternative(html_content, "text/html")
         msg.send(fail_silently=False)
-        return True
-    except Exception:
-        return False
+        return True, None
+    except Exception as e:
+        print(f"SMTP Error (Confirmation): {str(e)}")
+        return False, str(e)
 
 def send_booking_cancellation_email(booking, cancelled_by='customer', reason=None):
     """
@@ -428,6 +429,7 @@ def send_booking_cancellation_email(booking, cancelled_by='customer', reason=Non
     html_content = render_to_string('Reservations/emails/cancellation_email.html', context)
     text_content = strip_tags(html_content)
     
+    # Attempt to send the email
     try:
         msg = EmailMultiAlternatives(
             subject,
@@ -437,9 +439,10 @@ def send_booking_cancellation_email(booking, cancelled_by='customer', reason=Non
         )
         msg.attach_alternative(html_content, "text/html")
         msg.send(fail_silently=False)
-        return True
-    except Exception:
-        return False
+        return True, None
+    except Exception as e:
+        print(f"SMTP Error (Cancellation): {str(e)}")
+        return False, str(e)
 
 
 def notify_owner_of_cancellation(booking):

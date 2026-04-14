@@ -77,6 +77,19 @@
     margin-bottom: 8px;
 }
 
+.error-text {
+    color: #ef4444;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-top: 5px;
+}
+
+.error-text ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
 .form-group input, .form-group select, .form-group textarea {
     width: 100%;
     padding: 12px 15px;

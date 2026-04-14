@@ -44,7 +44,7 @@ class RestaurantForm(forms.ModelForm):
 class TableForm(forms.ModelForm):
     class Meta:
         model = Table
-        exclude = []  # we’ll control fields manually below
+        exclude = ['restaurant']  # restaurant set in view/service logic
 
     def __init__(self, *args, **kwargs):
         restaurant = kwargs.pop('restaurant', None)
@@ -54,8 +54,6 @@ class TableForm(forms.ModelForm):
         if restaurant:
             self.fields['table_size'].queryset = TableSize.objects.all()
             self.fields['seating_type'].queryset = SeatingType.objects.all()
-            self.fields['restaurant'].initial = restaurant
-            self.fields['restaurant'].widget = forms.HiddenInput()
 
 
 # -------------------------------
