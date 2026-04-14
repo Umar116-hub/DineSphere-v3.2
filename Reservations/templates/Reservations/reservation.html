@@ -267,6 +267,27 @@
         border-color: #111827;
     }
 
+    .table-item.booked-table {
+        opacity: 0.4;
+        pointer-events: none;
+        position: relative;
+    }
+
+    .table-item.booked-table::after {
+        content: "Booked";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: #ef4444;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-weight: bold;
+        font-size: 0.8rem;
+        z-index: 10;
+    }
+
     /* Interactive Stars */
     .star-rating {
         font-size: 1.5rem;
@@ -516,14 +537,14 @@
             </div>
             <div class="booking-sub-header" style="display: flex; width: 100%; justify-content: space-between; height: 20px">
                 <p>{{ restaurant.title }}</p>
-                <p>{{ restaurant.opening_hour }} - {{ restaurant.closing_hour }}</p>
+                <p>{{ restaurant.opening_hour|time:"f a" }} - {{ restaurant.closing_hour|time:"f a" }}</p>
             </div>
         </div>
 
         <!-- Mobile Info Bar (Hidden on Desktop) -->
         <div class="mobile-info-bar" style="margin-bottom: 20px; display: none; justify-content: space-between; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 10px;">
             <span style="font-weight: 700; color: #4b5563; font-size: 1.1rem;"><i class="fas fa-utensils"></i> {{ restaurant.title }}</span>
-            <span style="font-weight: 600; color: #6b7280;"><i class="fas fa-clock"></i> {{ restaurant.opening_hour }} - {{ restaurant.closing_hour }}</span>
+            <span style="font-weight: 600; color: #6b7280;"><i class="fas fa-clock"></i> {{ restaurant.opening_hour|time:"f a" }} - {{ restaurant.closing_hour|time:"f a" }}</span>
         </div>
 
         <div class="booking-strip">
@@ -920,22 +941,57 @@
         evt.currentTarget.classList.add("active");
     }
 
-    // Initialize
+    function checkAvailability() {
+        const dateStr = document.getElementById('form-date').value;
+        const startTime = document.getElementById('startTimeBtn').value;
+        const duration = document.getElementById('durationHrs').value;
+
+        if (!dateStr || !startTime) {
+            document.querySelectorAll(".table-item").forEach(table => {
+                table.classList.remove("booked-table");
+            });
+            return;
+        }
+
+        const url = `../get-unavailable-tables/?date=${dateStr}&start_time=${startTime}&duration=${duration}&restaurant=${restaurantName}`;
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                const bookedTables = data.booked_tables || [];
+                document.querySelectorAll(".table-item").forEach(table => {
+                    const tableId = parseInt(table.dataset.id);
+                    if (bookedTables.includes(tableId)) {
+                        table.classList.add("booked-table");
+                        // If it's already selected, deselect it
+                        if (table.classList.contains("selected")) {
+                            toggleTableSelection(table);
+                        }
+                    } else {
+                        table.classList.remove("booked-table");
+                    }
+                });
+            })
+            .catch(err => console.error("Error fetching availability", err));
+    }
+
+    // Initialize Flatpickr
     flatpickr("#dateBtn", {
         minDate: "today",
         onChange: function (selectedDates, dateStr) {
             document.getElementById('dateBtn').innerText = dateStr;
             document.getElementById('form-date').value = dateStr;
-            fetch(`../get-unavailable-tables/?date=${dateStr}&restaurant=${restaurantName}`)
-                .then(response => response.json())
-                .then(data => {
-                    const bookedTables = data.booked_tables;
-                    document.querySelectorAll(".table-item").forEach(table => {
-                        const tableId = parseInt(table.dataset.id);
-                        table.style.display = bookedTables.includes(tableId) ? "none" : "block";
-                    });
-                });
+            checkAvailability();
         }
+    });
+
+    // Add event listeners for dynamic updates
+    document.addEventListener("DOMContentLoaded", function () {
+        document.getElementById('startTimeBtn').addEventListener('change', checkAvailability);
+        document.getElementById('durationHrs').addEventListener('change', () => {
+            checkAvailability();
+            updateSummary();
+        });
     });
 
     let selectedTables = [];

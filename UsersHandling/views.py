@@ -3,13 +3,10 @@ from django.urls import reverse
 from django.http import HttpResponse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
-from django.core.cache import cache
 from .models import User, CustomerProfile, RestaurantStaff
 from .services import create_customer_user, create_owner_user
 
-# Rate limiting settings
-MAX_LOGIN_ATTEMPTS = 5
-LOGIN_TIMEOUT = 300  # 5 minutes in seconds
+
 
 # Create your views here.
 
@@ -216,25 +213,12 @@ def login_user(request):
         username = request.POST.get("login_username")
         password = request.POST.get("login_password")
         
-        # Check rate limit
-        ip_key = f"login_attempts_{request.META.get('REMOTE_ADDR', 'unknown')}"
-        attempts = cache.get(ip_key, 0)
-        
-        if attempts >= MAX_LOGIN_ATTEMPTS:
-            msg = f"Too many login attempts. Please try again after {LOGIN_TIMEOUT // 60} minutes."
-            next_url = request.POST.get('next') or request.GET.get('next', '')
-            if is_ajax:
-                from django.http import JsonResponse
-                return JsonResponse({'success': False, 'error': msg, 'next': next_url})
-            messages.error(request, msg)
-            return redirect(f"{reverse('auth')}?next={next_url}")
 
         if request.user.is_authenticated:
              logout(request)
              
         user = authenticate(request, username=username, password=password)
         if user is not None:
-            cache.delete(ip_key)
             login(request, user)
             
             next_url = request.POST.get('next') or request.GET.get('next')
@@ -248,9 +232,7 @@ def login_user(request):
                 
             return redirect("home")  
         else:
-            cache.set(ip_key, attempts + 1, LOGIN_TIMEOUT)
-            remaining = MAX_LOGIN_ATTEMPTS - (attempts + 1)
-            msg = f"Invalid username or password. {remaining} attempts remaining."
+            msg = "Invalid username or password."
             next_url = request.POST.get('next') or request.GET.get('next', '')
             
             if is_ajax:

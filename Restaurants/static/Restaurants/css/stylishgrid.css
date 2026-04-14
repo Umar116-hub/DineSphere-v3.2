@@ -144,19 +144,35 @@
     gap: 6px;
 }
 
-.status-available, .status-pending {
-    background: var(--secondary-color);
-    color: var(--primary-color);
+.status-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    z-index: 20;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(4px);
+    letter-spacing: 0.5px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.status-unavailable, .status-cancelled {
-    background: #fee2e2;
-    color: #ef4444;
+.status-approved, .status-finished, .status-confirmed {
+    background: rgba(6, 78, 59, 0.9); /* Dark Emerald */
+    color: white !important;
 }
 
-.status-finished {
-    background: #e5e7eb;
-    color: #374151;
+.status-pending {
+    background: rgba(146, 64, 14, 0.9); /* Dark Amber */
+    color: white !important;
+}
+
+.status-cancelled, .status-unavailable {
+    background: rgba(153, 27, 27, 0.9); /* Dark Red */
+    color: white !important;
 }
 
 /* Content Section */
@@ -255,9 +271,10 @@
     }
 
     .status-badge {
-        right: auto !important;
-        left: 5px !important;
-        font-size: 0.6rem !important;
+        top: 6px !important;
+        left: 6px !important;
+        padding: 4px 10px !important;
+        font-size: 0.65rem !important;
     }
 }
 

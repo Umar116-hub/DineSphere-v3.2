@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
             modal.classList.add('show');
             modalOverlay.classList.add('show');
 
-            window.pendingDeleteUrl = `/uh/remove-staff/${staffId}/`;
+            window.pendingActionUrl = `/uh/remove-staff/${staffId}/`;
         });
     }
 });

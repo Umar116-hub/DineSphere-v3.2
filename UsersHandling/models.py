@@ -54,7 +54,7 @@ class RestaurantStaff(models.Model):
     """This model represents the staff members of a restaurant. The role field specifies whether the staff member is an owner or regular staff, which can be used to manage permissions and access levels within the restaurant's management system.
     """
 
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     restaurant = models.ForeignKey('Restaurants.Restaurant', on_delete=models.CASCADE, blank=True, null=True)
 
     ROLE_CHOICES = [

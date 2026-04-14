@@ -193,26 +193,48 @@ def post_review(request, Restaurant_name):
     return JsonResponse({"success": False, "error": "Invalid request method"})
 
 
-from django.utils.dateparse import parse_date
+from django.utils.dateparse import parse_date, parse_time
+from datetime import datetime, timedelta
+from django.utils import timezone
 
 def get_unavailable_tables(request):
     restaurant_name = request.GET.get("restaurant")
     date_str = request.GET.get("date")
+    start_time_str = request.GET.get("start_time")
+    duration_str = request.GET.get("duration", "1")
 
     if not restaurant_name or not date_str:
         return JsonResponse({"error": "Missing params"}, status=400)
 
+    # If time isn't selected, return empty so all tables remain visible initially
+    if not start_time_str:
+        return JsonResponse({"booked_tables": []})
+
     restaurant = get_object_or_404(Restaurant, name=restaurant_name.replace("_", " "))
     selected_date = parse_date(date_str)
+    selected_time = parse_time(start_time_str)
 
-    # Get bookings for that restaurant + date
+    if not selected_date or not selected_time:
+        return JsonResponse({"error": "Invalid date or time"}, status=400)
+
+    try:
+        duration_hours = int(duration_str)
+    except ValueError:
+        duration_hours = 1
+
+    naive_start = datetime.combine(selected_date, selected_time)
+    start_datetime = timezone.make_aware(naive_start, timezone.get_current_timezone())
+    end_datetime = start_datetime + timedelta(hours=duration_hours)
+
+    # Get overlapping bookings
     bookings = Booking.objects.filter(
         restaurant=restaurant,
-        booking_start_datetime__date=selected_date,
-        status=Booking.STATUS_PENDING
+        status__in=[Booking.STATUS_PENDING, Booking.STATUS_CONFIRMED]
+    ).filter(
+        booking_start_datetime__lt=end_datetime,
+        booking_end_datetime__gt=start_datetime
     ).prefetch_related('tables')
 
-    # Collect booked table IDs
     booked_table_ids = set()
     for booking in bookings:
         for table in booking.tables.all():

@@ -29,16 +29,6 @@
     <i class="fas fa-circle-notch progress-mini"></i>
 </div>
 
-<div class="action-card btn-delete">
-    <div class="icon-box">
-        <i class="fas fa-trash-alt"></i>
-    </div>
-    <div class="card-content">
-        <span class="card-label">Delete Log</span>
-        <span class="card-value">Clear</span>
-    </div>
-    <i class="fas fa-bolt progress-mini"></i>
-</div>
 <div class="action-card btn-view">
     <div class="icon-box">
         <i class="fas fa-sync-alt"></i>
@@ -124,7 +114,7 @@
     {% if r.status == 'finished' or r.status == 'confirmed' %}status-approved
     {% elif r.status == 'pending' %}status-pending
     {% elif r.status == 'cancelled' %}status-cancelled
-    {% else %}status-unknown{% endif %}" style="z-index: 10;">
+    {% else %}status-unknown{% endif %}">
                     {% if r.status == 'finished' or r.status == 'confirmed' %}Approved{% else %}{{ r.status|capfirst }}{% endif %}
                 </span>
             </div>

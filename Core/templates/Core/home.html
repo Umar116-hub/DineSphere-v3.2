@@ -161,7 +161,7 @@
                 </div>
             </div>
             <div class="carousel" style="display: block !important;">
-                <h1 class="carousel-title">Cheap Ones</h1>
+                <h1 class="carousel-title">Restaurants</h1>
                 <div class="carousel-container">
                     <div class="carousel-track">
                         {% for restaurant, review, mp in combined %}
@@ -175,20 +175,6 @@
                 </div>
             </div>
 
-            <div class="carousel">
-                <h1 class="carousel-title">Top Restaurants</h1>
-                <div class="carousel-container">
-                    <div class="carousel-track">
-                        {% for restaurant, review, mp in combined %}
-                        {% if review.average_rating >= 4.0 %}
-                        {% include "Core/restaurant_card.html" with restaurant=restaurant review=review mp=mp %}
-                        {% endif %}
-                        {% endfor %}
-                    </div>
-                    <button class="carousel-btn btn-left">&#10094;</button>
-                    <button class="carousel-btn btn-right">&#10095;</button>
-                </div>
-            </div>
 
 
         </div>

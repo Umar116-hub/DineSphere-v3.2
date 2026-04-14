@@ -175,7 +175,10 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('modalMessage').innerText = `Delete ${window.selectedData.name || 'this item'}?`;
             modal.classList.add('show');
             document.getElementById('modalOverlay').classList.add('show');
-            window.pendingActionUrl = window.location.origin + window.location.pathname + `delete/${window.selectedId}/`;
+            // Only set a generic delete URL if one hasn't been set by a custom script (like staff.js)
+            if (!window.pendingActionUrl || !window.pendingActionUrl.includes('/uh/remove-staff/')) {
+                window.pendingActionUrl = window.location.origin + window.location.pathname + `delete/${window.selectedId}/`;
+            }
         });
     }
 
@@ -300,19 +303,4 @@ form.addEventListener('submit', async (e) => {
 });
 });
 
-// Modular Modal Confirm (Stays the same for every page)
-document.getElementById('modalConfirm')?.addEventListener('click', () => {
-    const deleteForm = document.createElement('form');
-    deleteForm.method = 'POST';
-    deleteForm.action = window.pendingDeleteUrl;
-    
-    const csrf = document.createElement('input');
-    csrf.type = 'hidden';
-    csrf.name = 'csrfmiddlewaretoken';
-    csrf.value = document.querySelector('[name=csrfmiddlewaretoken]').value;
-    
-    deleteForm.appendChild(csrf);
-    document.body.appendChild(deleteForm);
-    deleteForm.submit();
-});
 

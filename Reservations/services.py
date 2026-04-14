@@ -364,10 +364,14 @@ def send_booking_confirmation_email(booking):
         )
         msg.attach_alternative(html_content, "text/html")
         msg.send(fail_silently=False)
+        print(f"DEBUG [EMAIL SUCCESS]: Confirmation sent to {booking.customer.email}")
         return True, None
     except Exception as e:
-        print(f"SMTP Error (Confirmation): {str(e)}")
-        return False, str(e)
+        import traceback
+        error_msg = f"DEBUG [EMAIL ERROR] (Confirmation): {str(e)}"
+        print(error_msg)
+        traceback.print_exc()
+        return False, error_msg
 
 def send_booking_cancellation_email(booking, cancelled_by='customer', reason=None):
     """
@@ -398,10 +402,14 @@ def send_booking_cancellation_email(booking, cancelled_by='customer', reason=Non
         )
         msg.attach_alternative(html_content, "text/html")
         msg.send(fail_silently=False)
+        print(f"DEBUG [EMAIL SUCCESS]: Cancellation sent to {booking.customer.email}")
         return True, None
     except Exception as e:
-        print(f"SMTP Error (Cancellation): {str(e)}")
-        return False, str(e)
+        import traceback
+        error_msg = f"DEBUG [EMAIL ERROR] (Cancellation): {str(e)}"
+        print(error_msg)
+        traceback.print_exc()
+        return False, error_msg
 
 
 def notify_owner_of_cancellation(booking):
@@ -444,6 +452,8 @@ def notify_owner_of_cancellation(booking):
         )
         msg.attach_alternative(html_content, "text/html")
         msg.send(fail_silently=False)
+        print(f"DEBUG [EMAIL SUCCESS]: Owner notification sent to {owner.email}")
         return True
-    except Exception:
+    except Exception as e:
+        print(f"DEBUG [EMAIL ERROR] (Owner Notify): {str(e)}")
         return False
