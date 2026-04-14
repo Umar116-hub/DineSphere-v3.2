@@ -285,7 +285,7 @@ body {
     transition: all 0.3s ease;
     position: absolute;
     left: 0;
-    top: 1.5rem; /* Aligns with the top of the header content */
+    top: 1.5rem;
 }
 
 .back-home-btn:hover {
@@ -293,6 +293,24 @@ body {
     background: rgba(255, 255, 255, 0.15);
     border-color: var(--secondary-color);
     transform: translateX(-4px);
+}
+
+/* DESKTOP: Move button to top-left of screen */
+@media (min-width: 1024px) {
+    .back-home-btn {
+        position: fixed;
+        left: 3rem;
+        top: 3rem;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(5px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        z-index: 100;
+    }
+    
+    .back-home-btn:hover {
+        transform: scale(1.05);
+        background: rgba(255, 255, 255, 0.2);
+    }
 }
 
 @media (max-width: 600px) {
