@@ -12,6 +12,10 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 from os.path import join
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -113,7 +117,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Karachi'
 
 USE_I18N = True
 
@@ -141,9 +145,14 @@ MONGO_DB_NAME = os.environ.get('MONGO_DB_NAME', 'DineSphere')
 # Falls back to SQLite if MongoDB is unavailable
 USE_MONGO = os.environ.get('USE_MONGO', 'False').lower() == 'true'
 
-# Email Configuration (Dev-only: Console backend - prints to terminal)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = 'bookings@dinesphere.com'
+# Email Configuration (Brevo SMTP)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp-relay.brevo.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'bookings@dinesphere.com')
 
 # Security Settings (ENABLE in production - disable for local dev)
 SECURE_SSL_REDIRECT = False  # Redirect HTTP to HTTPS - set to True in production

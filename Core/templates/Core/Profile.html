@@ -35,10 +35,7 @@
     <nav class="profile-tabs">
         <button class="tab-btn active" onclick="openTab(event, 'profile-info')">Profile Info</button>
         {% if request.user.role == 'CUSTOMER' %}
-        <button class="tab-btn" onclick="openTab(event, 'confirmed-orders')">Active Bookings</button>
-        <button class="tab-btn" onclick="openTab(event, 'pending-orders')">Pending</button>
-        <button class="tab-btn" onclick="openTab(event, 'finished-orders')">Completed</button>
-        <button class="tab-btn" onclick="openTab(event, 'cancelled-orders')">Cancelled</button>
+        <button class="tab-btn" onclick="openTab(event, 'my-bookings')">Bookings</button>
         {% endif %}
         <button class="tab-btn" onclick="openTab(event, 'my-reviews')">My Reviews</button>
     </nav>
@@ -48,10 +45,12 @@
             <h3>Personal Information</h3>
             <div class="info-grid">
                 <div class="info-item"><span>Gender:</span>
-                    {% if request.user.gender == 'M'%}
+                    {% if request.user.gender|lower|first == 'm' %}
                     <p>Male</p>
-                    {% elif request.user.gender == 'F' %}
+                    {% elif request.user.gender|lower|first == 'f' %}
                     <p>Female</p>
+                    {% elif request.user.gender|lower|first == 'o' %}
+                    <p>Other</p>
                     {% else %}
                     <p>Not specified</p>
                     {% endif %}
@@ -93,26 +92,32 @@
                 {% endif %}
             </div>
 
-            {# --- Owner Section --- #}
-            {% if request.user.role == 'OWNER' %}
-            <h3 style="margin-top:24px;">🍽️ My Restaurants</h3>
+            {# --- Managed Restaurants (Owner/Staff) --- #}
+            {% if request.user.role == 'OWNER' or request.user.role == 'STAFF' %}
+            <h3 style="margin-top:24px;">🍽️ Managed Restaurants</h3>
             <div class="info-grid">
-                {% for staff in owner_restaurants %}
+                {% for staff in managed_restaurants %}
                 <div class="info-item" style="flex-direction:column;align-items:flex-start;gap:6px;">
                     <span style="font-weight:600;">{{ staff.restaurant.name }}</span>
-                    <p style="font-size:12px;opacity:0.7;">{{ staff.restaurant.city }}</p>
+                    <p style="font-size:12px;opacity:0.7;">Role: {{ staff.role|title }} | {{ staff.restaurant.city }}</p>
                     <div style="display:flex;gap:8px;margin-top:4px;">
+                        {% if staff.role == 'OWNER' %}
                         <a href="/business/" style="font-size:12px;color:var(--ternary-color,#d88938);"><i class="fas fa-chart-line"></i> Dashboard</a>
+                        {% else %}
+                        <a href="/business/reservations/" style="font-size:12px;color:var(--ternary-color,#d88938);"><i class="fas fa-calendar-check"></i> Staff Dashboard</a>
+                        {% endif %}
                         <a href="/reservation/{{ staff.restaurant.name|space_to_value }}/" style="font-size:12px;color:#3498db;"><i class="fas fa-eye"></i> View Page</a>
                     </div>
                 </div>
                 {% empty %}
-                <p style="opacity:0.6;">No restaurants registered yet.</p>
+                <p style="opacity:0.6;">No restaurants assigned yet.</p>
                 {% endfor %}
             </div>
-            <a href="/business/registration/" style="display:inline-block;margin-top:12px;padding:8px 16px;background:var(--ternary-color,#d88938);color:#fff;border-radius:6px;font-size:13px;text-decoration:none;">
+            {% if request.user.role == 'OWNER' %}
+            <a href="{% url 'business_info' %}" style="display:inline-block;margin-top:12px;padding:8px 16px;background:var(--ternary-color,#d88938);color:#fff;border-radius:6px;font-size:13px;text-decoration:none;">
                 <i class="fas fa-plus"></i> Register Another Restaurant
             </a>
+            {% endif %}
             {% else %}
             <div style="margin-top:24px;padding:20px;background:rgba(216,137,56,0.05);border-radius:10px;border-left:4px solid #ddd;">
                 <h4 style="margin:0 0 8px; color:#888;">🍴 Business Owner?</h4>
@@ -120,70 +125,14 @@
             </div>
             {% endif %}
         </div>
-        <div id="confirmed-orders" class="tab-content">
-            <h3>Active Bookings</h3>
+        <div id="my-bookings" class="tab-content">
+            <h3>My Bookings</h3>
             <div class="table-container">
-                {% if not confirmed_booking %}
-                <div class="empty-state">
-                    <div class="empty-icon">✅</div>
-                    <h4>No Active Bookings</h4>
-                    <p>When you complete a booking and pay, it will appear here.</p>
-                </div>
-                {% else %}
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Order ID</th>
-                            <th>Restaurant</th>
-                            <th>Tables</th>
-                            <th>Booking Date</th>
-                            <th>Time</th>
-                            <th>Total</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for booking in confirmed_booking %}
-                        <tr>
-                            <td>#{{ booking.id }}</td>
-                             <td>{{ booking.restaurant.name }}</td>
-                             <td>
-                                {% for table in booking.tables.all %}
-                                    {{ table.name }}{% if not forloop.last %}, {% endif %}
-                                {% empty %}
-                                    –
-                                {% endfor %}
-                             </td>
-                             <td>{{ booking.booking_start_datetime|date:"d M Y" }}</td>
-                             <td>{{ booking.booking_start_datetime|time:"g:i A" }} – {{ booking.booking_end_datetime|time:"g:i A" }}</td>
-                             <td>${{ booking.total_price }}</td>
-                            <td><span class="badge success">Confirmed</span></td>
-                            <td>
-                                <div style="display:flex; gap:8px;">
-                                    <a href="{% url 'view_invoice' booking.id %}" class="btn-invoice" style="text-decoration:none; color:var(--primary,#3498db); border:1px solid #3498db; padding:4px 8px; border-radius:4px; font-size:12px;">
-                                        <i class="fas fa-file-invoice"></i> Invoice
-                                    </a>
-                                    <button class="btn-cancel" onclick="confirmCancel('{{ booking.id }}')" style="border:1px solid #dc3545; padding:4px 8px; border-radius:4px; font-size:12px;">
-                                        <i class="fas fa-times-circle"></i> Cancel
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% endif %}
-            </div>
-        </div>
-        <div id="pending-orders" class="tab-content">
-            <h3>Current Orders</h3>
-            <div class="table-container">
-                {% if not pending_booking %}
+                {% if not bookings %}
                 <div class="empty-state">
                     <div class="empty-icon">📅</div>
-                    <h4>No Pending Orders</h4>
-                    <p>You don't have any upcoming reservations.</p>
+                    <h4>No Bookings Yet</h4>
+                    <p>When you make a reservation, it will appear here.</p>
                     <a href="{% url 'home' %}" class="btn-browse">Browse Restaurants</a>
                 </div>
                 {% else %}
@@ -201,7 +150,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for booking in pending_booking %}
+                        {% for booking in bookings %}
                         <tr>
                             <td>#{{ booking.id }}</td>
                              <td>{{ booking.restaurant.name }}</td>
@@ -215,107 +164,30 @@
                              <td>{{ booking.booking_start_datetime|date:"d M Y" }}</td>
                              <td>{{ booking.booking_start_datetime|time:"g:i A" }} – {{ booking.booking_end_datetime|time:"g:i A" }}</td>
                              <td>${{ booking.total_price }}</td>
-                            <td><span class="badge pending">Pending</span></td>
                             <td>
-                                <div style="display:flex; gap:8px;">
-                                    <a href="{% url 'checkout' %}" class="btn-checkout" style="text-decoration:none; color:#fff; background:var(--ternary-color,#d88938); padding:4px 8px; border-radius:4px; font-size:12px;">
-                                        <i class="fas fa-shopping-cart"></i> Checkout
-                                    </a>
-                                    <button class="btn-cancel" onclick="confirmCancel('{{ booking.id }}')" style="border:1px solid #dc3545; padding:4px 8px; border-radius:4px; font-size:12px;">
-                                        <i class="fas fa-times-circle"></i> Cancel
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% endif %}
-
-            </div>
-        </div>
-
-        <div id="finished-orders" class="tab-content">
-            <h3>Order History</h3>
-            <div class="table-container">
-                {% if not completed_booking %}
-                <p>You have no completed orders.</p>
-                {% else %}
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Order ID</th>
-                            <th>Restaurant</th>
-                            <th>Tables</th>
-                            <th>Booking Date</th>
-                            <th>Time</th>
-                            <th>Total</th>
-                            <th>Status</th>
-                            <th>Invoice</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for booking in completed_booking %}
-                        <tr>
-                            <td>#{{ booking.id }}</td>
-                             <td>{{ booking.restaurant.name }}</td>
-                             <td>
-                                {% for table in booking.tables.all %}
-                                    {{ table.name }}{% if not forloop.last %}, {% endif %}
-                                {% empty %}
-                                    –
-                                {% endfor %}
-                             </td>
-                             <td>{{ booking.booking_start_datetime|date:"d M Y" }}</td>
-                             <td>{{ booking.booking_start_datetime|time:"g:i A" }} – {{ booking.booking_end_datetime|time:"g:i A" }}</td>
-                             <td>${{ booking.total_price }}</td>
-                            <td><span class="badge success">Completed</span></td>
-                            <td><a href="{% url 'view_invoice' booking.id %}" class="btn-invoice" style="color:var(--primary,#3498db);font-size:13px;"><i class="fas fa-file-invoice"></i> Invoice</a></td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                {% endif %}
-            </div>
-        </div>
-
-        <div id="cancelled-orders" class="tab-content">
-            <h3>Cancelled Orders</h3>
-            <div class="table-container">
-                {% if not canceled_booking %}
-                <p>You have no cancelled orders.</p>
-                {% else %}
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Order ID</th>
-                            <th>Restaurant</th>
-                            <th>Tables</th>
-                            <th>Booking Date</th>
-                            <th>Total</th>
-                            <th>Refund Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for booking in canceled_booking %}
-                        <tr>
-                            <td>#{{ booking.id }}</td>
-                             <td>{{ booking.restaurant.name }}</td>
-                             <td>
-                                {% for table in booking.tables.all %}
-                                    {{ table.name }}{% if not forloop.last %}, {% endif %}
-                                {% empty %}
-                                    –
-                                {% endfor %}
-                             </td>
-                             <td>{{ booking.booking_start_datetime|date:"d M Y" }}</td>
-                             <td>${{ booking.total_price }}</td>
-                            <td>
-                                {% if booking.payment_status == 'refunded' %}
-                                <span class="badge" style="background:rgba(23,162,184,0.15);color:#17a2b8;">💳 Refunded</span>
+                                {% if booking.status == 'pending' %}
+                                    <span class="badge pending">Pending Approval</span>
+                                {% elif booking.status == 'finished' or booking.status == 'confirmed' %}
+                                    <span class="badge success">Approved</span>
+                                {% elif booking.status == 'cancelled' %}
+                                    <span class="badge error">Cancelled</span>
                                 {% else %}
-                                <span class="badge error">No Refund</span>
+                                    <span class="badge">{{ booking.status|capfirst }}</span>
                                 {% endif %}
+                            </td>
+                            <td>
+                                <div style="display:flex; gap:8px; align-items:center;">
+                                    <a href="{% url 'view_invoice' booking.id %}" class="btn-invoice" style="text-decoration:none; color:var(--primary,#3498db); border:1px solid #3498db; padding:4px 8px; border-radius:4px; font-size:12px;">
+                                        <i class="fas fa-file-invoice"></i> Invoice
+                                    </a>
+                                    {% if booking.can_cancel %}
+                                        <button class="btn-cancel" onclick="confirmCancel('{{ booking.id }}')" style="border:1px solid #dc3545; padding:4px 8px; border-radius:4px; font-size:12px; cursor:pointer; background:none; color:#dc3545;">
+                                            <i class="fas fa-times-circle"></i> Cancel
+                                        </button>
+                                    {% elif booking.status == 'pending' or booking.status == 'confirmed' or booking.status == 'finished' %}
+                                        <span style="font-size:11px; color:#888; white-space:nowrap;"><i class="fas fa-lock"></i> Fixed</span>
+                                    {% endif %}
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}

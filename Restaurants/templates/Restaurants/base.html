@@ -126,15 +126,24 @@
                 <a href="/business/reservations" class="nav-item {% if request.path == '/business/reservations' %}active{% endif %}" title="Reservations">
                     <i class="fas fa-calendar-check"></i>
                 </a>
+
+                {% if request.user|is_owner %}
                 <a href="/business/tables" class="nav-item {% if request.path == '/business/tables' %}active{% endif %}" title="Table Management">
                     <i class="fas fa-table"></i>
                 </a>
                 <a href="/business/holidays" class="nav-item {% if request.path == '/business/holidays' %}active{% endif %}" title="Holidays">
                     <i class="fas fa-gift"></i>
                 </a>
+                {% endif %}
+
                 <a href="/business/reviews" class="nav-item {% if request.path == '/business/reviews' %}active{% endif %}" title="Reviews">
                     <i class="fas fa-star"></i>
                 </a>
+                
+                <!-- Logout for Mobile (Visible via CSS) -->
+                <div class="nav-item mobile-logout-btn" id="dashboard-logout-mobile" title="Logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                </div>
             </div>
         </div>
         <div class="sidebar-bottom">
@@ -161,8 +170,8 @@
                 <div class="header-action-icons">
                     {% if request.user|is_owner %}
                     <a href="/business/business-info" title="Business Info"><i class="fas fa-briefcase c-pointer"></i></a>
-                    {% endif %}
                     <a href="/business/staff-management" title="Staff Management"><i class="fas fa-user-tie c-pointer"></i></a>
+                    {% endif %}
                     <div class="notification-bell">
                         <a href="/"><i class="fas fa-arrow-left"></i></a>
                     </div>
@@ -232,7 +241,7 @@
 
 {% endblock %}
 
-<!-- <div id="actionPanel" class="action-panel" >
+<div id="actionPanel" class="action-panel">
     <div class="panel-content">
         <div class="selection-info">
             <span id="selectedCount">0</span> selected
@@ -242,14 +251,9 @@
              <button type="button" class="panel-btn" id="deselectBtn">
                 <i class="fas fa-times"></i> Deselect
             </button>
-       
-            
-            <button type="button" class="panel-btn btn-danger" id="deleteBtn">
-                <i class="fas fa-trash-alt"></i> Remove Staff
-            </button>
         </div>
     </div>
-</div>  -->
+</div>
 
 </body>
 <script src="{% static 'Restaurants/js/base.js' %}?v=1.3"></script>

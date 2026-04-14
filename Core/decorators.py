@@ -22,7 +22,7 @@ def customer_required(view_func):
         if request.user.role == 'CUSTOMER' or request.method == 'GET':
             return view_func(request, *args, **kwargs)
         
-        messages.error(request, "Owners cannot access booking features. Please use a regular customer account to make a reservation.")
+        messages.error(request, "Business accounts (Owners/Staff) cannot access booking features. Please use a regular customer account to make a reservation.")
         return redirect('home')
         
     return _wrapped_view

@@ -9,11 +9,11 @@
 
 <div class="action-card btn-finish booking_finish">
     <div class="icon-box">
-        <i class="fas fa-check"></i>
+        <i class="fas fa-check-circle"></i>
     </div>
     <div class="card-content">
-        <span class="card-label">Mark Finished</span>
-        <span class="card-value">Done</span>
+        <span class="card-label">Approve</span>
+        <span class="card-value">Accept</span>
     </div>
     <i class="fas fa-circle-notch progress-mini"></i>
 </div>
@@ -67,49 +67,84 @@
             </div>
         </div>
 
-        <div class="filter-group toggle-filter">
-            <label class="checkbox-wrapper">
-                <input type="checkbox" checked> Available
-            </label>
-            <label class="checkbox-wrapper">
-                <input type="checkbox"> Budget (Cheap)
-            </label>
-        </div>
-
         <div class="filter-group">
-            <span class="filter-label">Label</span>
-            <select class="custom-select">
-                <option value="all">All Styles</option>
-                <option value="adventure">Adventure</option>
-                <option value="iconic">Iconic</option>
-                <option value="modern">Modern</option>
+            <span class="filter-label">Filter Status</span>
+            <select class="custom-select" id="statusFilter" onchange="applyFilters()">
+                <option value="" {% if not current_status %}selected{% endif %}>All Bookings</option>
+                <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending</option>
+                <option value="finished" {% if current_status == 'finished' %}selected{% endif %}>Approved</option>
+                <option value="cancelled" {% if current_status == 'cancelled' %}selected{% endif %}>Cancelled</option>
             </select>
         </div>
 
         <div class="filter-group">
-            <input type="text" class="custom-select" placeholder="Search items..." style="width: 200px;">
+            <span class="filter-label">Sort By</span>
+            <select class="custom-select" id="sortFilter" onchange="applyFilters()">
+                <option value="created_at" {% if current_sort == 'created_at' %}selected{% endif %}>Time Made (Newest)</option>
+                <option value="price" {% if current_sort == 'price' %}selected{% endif %}>Price (Highest)</option>
+            </select>
         </div>
+
+        <script>
+            function applyFilters() {
+                const status = document.getElementById('statusFilter').value;
+                const sort = document.getElementById('sortFilter').value;
+                let url = new URL(window.location.href);
+                if (status) url.searchParams.set('status', status);
+                else url.searchParams.delete('status');
+                url.searchParams.set('sort', sort);
+                window.location.href = url.toString();
+            }
+        </script>
     </header>
 
     <main class="data-grid grid-view" id="mainGrid">
         {% for r in reservations %}
         <div class="item-card clickable-card" data-label="adventure" data-id="{{r.id}}">
-            <div class="item-image">
+            <div class="item-image" style="background-color: #f3f4f6; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; height: 180px;">
+                {% if r.customer.image %}
+                    <img src="{{ r.customer.image.url }}" alt="{{ r.customer.username }}" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.85;">
+                {% else %}
+                    <div style="text-align: center; color: #d1d5db;">
+                        <i class="fas fa-user-circle" style="font-size: 3.5rem; display: block; margin-bottom: 8px;"></i>
+                        <span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase;">{{ r.customer.username }}</span>
+                    </div>
+                {% endif %}
+                
+                <!-- Customer Name Overlay -->
+                {% if r.customer.image %}
+                <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.8)); padding: 25px 12px 8px 12px; color: white;">
+                    <span style="font-size: 0.85rem; font-weight: 700; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">
+                         <i class="fas fa-user"></i> {{ r.customer.username }}
+                    </span>
+                </div>
+                {% endif %}
 
                 <span class="status-badge 
-    {% if r.status == 'finished' %}status-finished
+    {% if r.status == 'finished' or r.status == 'confirmed' %}status-approved
     {% elif r.status == 'pending' %}status-pending
     {% elif r.status == 'cancelled' %}status-cancelled
-    {% else %}status-unknown{% endif %}">
-                    {{ r.status|capfirst }}
+    {% else %}status-unknown{% endif %}" style="z-index: 10;">
+                    {% if r.status == 'finished' or r.status == 'confirmed' %}Approved{% else %}{{ r.status|capfirst }}{% endif %}
                 </span>
             </div>
             <div class="item-content">
-                <div>
-                    <span class="item-label">${{r.total_price}}/hr</span>
-                    <h3 class="item-title">{% for table in r.tables.all %}{{ table.name }}, {% endfor %}</h3>
+                <div style="width: 100%;">
+                    <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                        <h3 class="item-title" style="font-size: 1.1rem; color: #111827;">#{{ r.id }}</h3>
+                        <span class="item-label" style="font-size: 0.9rem; font-weight: 700; color: #d88938;">${{r.total_price}}</span>
+                    </div>
+                    <p style="margin: 4px 0; font-size: 0.85rem; color: #6b7280; font-weight: 500;">
+                        <i class="fas fa-table"></i> {% for table in r.tables.all %}{{ table.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                    </p>
+                    <p style="margin: 2px 0 8px 0; font-size: 0.75rem; color: #9ca3af; font-style: italic;">
+                        <i class="fas fa-clock"></i> Made at: {{ r.created_at|date:"d M, g:i A" }}
+                    </p>
+                    <div class="item-price" style="font-size: 0.85rem; font-weight: 600; color: #374151; margin-top: 8px;">
+                        <i class="far fa-calendar-alt"></i> {{r.booking_start_datetime|date:"d M Y"}} <br>
+                        <i class="far fa-clock"></i> {{r.booking_start_datetime|time:"g:i A"}} - {{r.booking_end_datetime|time:"g:i A"}}
+                    </div>
                 </div>
-                <div class="item-price">{{r.booking_start_datetime}} - {{r.booking_end_datetime}}</div>
             </div>
         </div>
 

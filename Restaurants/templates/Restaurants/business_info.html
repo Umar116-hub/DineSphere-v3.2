@@ -13,8 +13,8 @@
         <i class="fas fa-plus"></i>
     </div>
     <div class="card-content">
-        <span class="card-label">Add Entry</span>
-        <span class="card-value">Add New</span>
+        <span class="card-label">Add Restaurant</span>
+        <span class="card-value">Register New</span>
     </div>
     <i class="fas fa-circle-notch progress-mini"></i>
 </div>
@@ -134,8 +134,97 @@
     </div>
 
     <form id="drawerForm" class="drawer-form" method="post" enctype="multipart/form-data">
-                {% csrf_token %}
-                {{ form.as_p }}
+        {% csrf_token %}
+        
+        <div class="form-section">
+            <h3 class="section-title"><i class="fas fa-info-circle"></i> Identity & Branding</h3>
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label>Restaurant Name</label>
+                    {{ form.name }}
+                </div>
+                <div class="form-group full-width">
+                    <label>Display Title</label>
+                    {{ form.title }}
+                </div>
+                <div class="form-group full-width">
+                    <label>Cover Image</label>
+                    <div class="file-input-wrapper">
+                        {{ form.image }}
+                    </div>
+                </div>
+                <div class="form-group full-width">
+                    <label>About Restaurant</label>
+                    {{ form.about_restaurant }}
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3 class="section-title"><i class="fas fa-map-marker-alt"></i> Location & Contact</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>City</label>
+                    {{ form.city }}
+                </div>
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    {{ form.phone_number }}
+                </div>
+                <div class="form-group full-width">
+                    <label>Address</label>
+                    {{ form.address }}
+                </div>
+                <div class="form-group">
+                    <label>Facebook Link</label>
+                    {{ form.fb_link }}
+                </div>
+                <div class="form-group">
+                    <label>Website Link</label>
+                    {{ form.website_link }}
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3 class="section-title"><i class="fas fa-clock"></i> Operations & Scheduling</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Opening Hour</label>
+                    {{ form.default_opening_hour }}
+                </div>
+                <div class="form-group">
+                    <label>Closing Hour</label>
+                    {{ form.default_closing_hour }}
+                </div>
+                <div class="form-group">
+                    <label>Slot Duration (Min)</label>
+                    {{ form.slot_duration_minutes }}
+                </div>
+                <div class="form-group">
+                    <label>Cool Down (Min)</label>
+                    {{ form.cool_down }}
+                </div>
+                <div class="form-group">
+                    <label>Advance Booking Days</label>
+                    {{ form.allow_advance_booking_days }}
+                </div>
+                <div class="form-group">
+                    <label>Top Offers</label>
+                    <div class="checkbox-wrapper">
+                        {{ form.has_top_offers }} <span>Enable Featured Status</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3 class="section-title"><i class="fas fa-chair"></i> Seating Available</h3>
+            <div class="seating-multi-select">
+                {{ form.seating_types }}
+            </div>
+        </div>
+
         <div class="drawer-footer">
             <button type="button" class="btn-secondary" id="clearForm">Clear</button>
             <button type="submit" class="btn-primary">Save Changes</button>

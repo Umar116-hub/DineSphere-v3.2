@@ -56,54 +56,69 @@ def create_owner_user(username, email, password, dob=None, gender=None, image=No
 
 
 
-def add_restaurant_staff(request, username=None):
+def add_restaurant_staff(request):
     """
-    Creates a RestaurantStaff profile with the role 'STAFF'.
-    Enhancement: If the user doesn't exist, auto-create a STAFF account.
+    Creates a new STAFF user and a corresponding RestaurantStaff profile.
     """
     if request.method == 'POST':
-        if username is None:
-            username = request.POST.get('username')
+        # 1. Extract details from POST
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        email = request.POST.get('email', '').strip()
+        password = request.POST.get('password', '').strip()
+        phone = request.POST.get('phone', '').strip()
+        gender = request.POST.get('gender', 'O')
         
-        # 1. Get the current restaurant from session
+        # 2. Get the current restaurant from session
         restaurant_id = request.session.get('selected_restaurant_id')
         if not restaurant_id:
             messages.error(request, "No restaurant selected.")
             return redirect('staff_management')
 
-        # 2. Find or create the user
+        # 3. Validations
+        if not email or not password or not first_name:
+            messages.error(request, "First Name, Email, and Password are required.")
+            return redirect('staff_management')
+
+        if User.objects.filter(email=email).exists():
+            messages.error(request, "A user with this email already exists.")
+            return redirect('staff_management')
+
+        # Generate a username from email if not provided (using prefix)
+        username = email.split('@')[0]
+        # Ensure username uniqueness
+        original_username = username
+        counter = 1
+        while User.objects.filter(username=username).exists():
+            username = f"{original_username}{counter}"
+            counter += 1
+
+        # 4. Create the user
         try:
-            target_user = User.objects.get(username__iexact=username)
-            created = False
-        except User.DoesNotExist:
-            # AUTO-CREATE STAFF ACCOUNT
-            # For simplicity, we use the username as part of the email if not provided, 
-            # but usually, we'd want an email field in the form.
-            # We'll assume a generic email or just use username@dinesphere.internal
             target_user = User.objects.create_user(
                 username=username,
-                email=f"{username.lower()}@dinesphere.internal",
-                password="DineSphere123!",
+                email=email,
+                password=password,
+                first_name=first_name,
+                last_name=last_name,
                 role='STAFF'
             )
-            created = True
-            
-        # 3. Check if they are already staff at this restaurant
-        if RestaurantStaff.objects.filter(user=target_user, restaurant_id=restaurant_id).exists():
-            messages.warning(request, f"{username} is already a staff member here.")
-        else:
-            # 4. Create the profile
+            target_user.phone = phone
+            target_user.gender = gender
+            target_user.save()
+
+            # 5. Create the RestaurantStaff profile
             RestaurantStaff.objects.create(
                 user=target_user,
                 restaurant_id=restaurant_id,
                 role='STAFF',
                 is_premium=False
             )
-            if created:
-                messages.success(request, f"New account created for {username} (Role: STAFF). Default password: DineSphere123!")
-            else:
-                messages.success(request, f"{username} added as staff successfully!")
-                
+            messages.success(request, f"Staff member {first_name} {last_name} added successfully!")
+
+        except Exception as e:
+            messages.error(request, f"Error creating staff: {str(e)}")
+            
     return redirect('/business/staff-management/') 
 
 

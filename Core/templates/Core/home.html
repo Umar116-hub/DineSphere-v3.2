@@ -79,6 +79,13 @@
                     <a href="/business/" class="feature-btn" style="text-decoration: none; padding: 12px 24px; border-radius: 50px;">Open Business Dashboard</a>
                     <a href="/profile" class="feature-btn" style="text-decoration: none; padding: 12px 24px; border-radius: 50px; background: transparent; border: 1px solid var(--secondary-color);">Manage Profile</a>
                 </div>
+                {% elif request.user.role == 'STAFF' %}
+                <h1>Welcome Back, <span style="color: var(--ternary-color);">Staff</span></h1>
+                <div style="margin-bottom: 25px;">View today's reservations and manage guest lists from your dashboard.</div>
+                <div style="display: flex; gap: 1rem;">
+                    <a href="/business/reservations/" class="feature-btn" style="text-decoration: none; padding: 12px 24px; border-radius: 50px;">Open Staff Dashboard</a>
+                    <a href="/profile" class="feature-btn" style="text-decoration: none; padding: 12px 24px; border-radius: 50px; background: transparent; border: 1px solid var(--secondary-color);">Manage Profile</a>
+                </div>
                 {% else %}
                 <h1>Welcome to Dine<span style="color: var(--ternary-color);">Sphere</span></h1>
                 <div>Dineshpere is a modern dining and restaurant discovery platform designed to make eating out
@@ -132,7 +139,7 @@
     </div>
 </section>
     {% else %}
-    {% if request.user.role != 'OWNER' %}
+    {% if request.user.role != 'OWNER' and request.user.role != 'STAFF' %}
     <section id="main-page" style="padding-top: 50px;">
         <div class="carousels">
 

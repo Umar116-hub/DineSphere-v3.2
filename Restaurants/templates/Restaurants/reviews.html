@@ -110,10 +110,24 @@ Review
 
     <form id="drawerForm" class="drawer-form" method="post" action="/business/reviews/">
         {% csrf_token %}
-        {{ form.as_p }}
+        
+        <div class="form-section">
+            <h3 class="section-title"><i class="fas fa-star"></i> Rating & Feedback</h3>
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label>Star Rating (1-5)</label>
+                    {{ form.rating }}
+                </div>
+                <div class="form-group full-width">
+                    <label>Customer Comment</label>
+                    {{ form.comment }}
+                </div>
+            </div>
+        </div>
+
         <div class="drawer-footer">
             <button type="button" class="btn-secondary" id="clearForm">Clear</button>
-            <button type="submit" class="btn-primary">Save Changes</button>
+            <button type="submit" class="btn-primary">Post Review</button>
         </div>
     </form>
 </div>

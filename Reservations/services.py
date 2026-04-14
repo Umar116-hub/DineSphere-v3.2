@@ -239,8 +239,8 @@ def create_booking(request, Restaurant_name):
     # Set tables
     booking.tables.set(table_ids)
 
-    # Calculate total price
-    booking.total_price = sum(table.calculate_price() for table in booking.tables.all())
+    # Calculate total price (tables * duration)
+    booking.total_price = sum(table.calculate_price() for table in booking.tables.all()) * Decimal(str(duration))
     booking.save()
 
     # Render checkout
@@ -371,8 +371,8 @@ def generate_invoice_html(booking):
         'invoice_number': f"INV-{booking.id:06d}",
         'invoice_date': timezone.now().strftime('%Y-%m-%d'),
         'subtotal': booking.total_price,
-        'tax': booking.total_price * Decimal('0.1'),  # 10% tax example
-        'total': booking.total_price * Decimal('1.1'),
+        'tax': Decimal('0.00'),
+        'total': booking.total_price,
     }
     
     return render_to_string('Reservations/invoice_template.html', invoice_data)
@@ -380,82 +380,65 @@ def generate_invoice_html(booking):
 
 def send_booking_confirmation_email(booking):
     """
-    Send booking confirmation email to customer.
-    Dev-only: Console backend for development (no SMTP needed)
+    Send booking confirmation HTML email to customer.
     """
-    from django.core.mail import send_mail
+    from django.core.mail import EmailMultiAlternatives
+    from django.template.loader import render_to_string
+    from django.utils.html import strip_tags
     from django.conf import settings
     
-    subject = f'Booking Confirmation - {booking.restaurant.name}'
-    message = f"""
-    Dear {booking.customer.username},
-
-    Your booking has been confirmed!
-
-    Restaurant: {booking.restaurant.name}
-    Date: {booking.booking_start_datetime.strftime('%B %d, %Y')}
-    Time: {booking.booking_start_datetime.strftime('%I:%M %p')}
-    Table(s): {', '.join([t.name for t in booking.tables.all()])}
-    Total: ${booking.total_price}
-
-    Booking Reference: #{booking.id}
-
-    Thank you for choosing DineSphere!
-    """
+    subject = f'Booking Confirmation - {booking.restaurant.name} (# {booking.id})'
+    context = {
+        'booking': booking,
+        'profile_url': 'http://127.0.0.1:8000/profile/' # Replace with actual domain in prod
+    }
+    
+    html_content = render_to_string('Reservations/emails/confirmation_email.html', context)
+    text_content = strip_tags(html_content)
     
     try:
-        send_mail(
-            subject=subject,
-            message=message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[booking.customer.email],
-            fail_silently=True,
+        msg = EmailMultiAlternatives(
+            subject,
+            text_content,
+            settings.DEFAULT_FROM_EMAIL,
+            [booking.customer.email]
         )
+        msg.attach_alternative(html_content, "text/html")
+        msg.send(fail_silently=False)
         return True
-    except Exception as e:
-        print(f"Email sending failed: {e}")
+    except Exception:
         return False
 
-def send_booking_cancellation_email(booking):
+def send_booking_cancellation_email(booking, cancelled_by='customer', reason=None):
     """
-    Simulates sending a cancellation and refund notification email to the customer.
-    (Currently configured for console backend printing via settings).
+    Send cancellation HTML email to customer with refund instructions.
     """
-    subject = f"Order Cancelled: Reservation at {booking.restaurant.name}"
+    from django.core.mail import EmailMultiAlternatives
+    from django.template.loader import render_to_string
+    from django.utils.html import strip_tags
+    from django.conf import settings
     
-    # Message Body
-    message = f"""
-    Dear {booking.customer.username},
-
-    Your reservation at {booking.restaurant.name} has been successfully cancelled.
-
-    Reservation Details:
-    Date: {booking.booking_start_datetime.strftime('%B %d, %Y')}
-    Time: {booking.booking_start_datetime.strftime('%I:%M %p')}
-    Table(s): {', '.join([t.name for t in booking.tables.all()])}
+    subject = f'Reservation Cancelled - {booking.restaurant.name} (# {booking.id})'
+    context = {
+        'booking': booking,
+        'cancelled_by': cancelled_by,
+        'reason': reason
+    }
     
-    Refund Status:
-    Your payment of ${booking.total_price} has been marked for refund.
-    Please allow 3-5 business days for the funds to appear on your statement.
-
-    Cancelled Booking Reference: #{booking.id}
-
-    We hope to host you another time!
-    """
+    html_content = render_to_string('Reservations/emails/cancellation_email.html', context)
+    text_content = strip_tags(html_content)
     
     try:
-        from django.core.mail import send_mail
-        from django.conf import settings
-        send_mail(
-            subject=subject,
-            message=message,
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'support@dinesphere.com'),
-            recipient_list=[booking.customer.email],
-            fail_silently=True,
+        msg = EmailMultiAlternatives(
+            subject,
+            text_content,
+            settings.DEFAULT_FROM_EMAIL,
+            [booking.customer.email]
         )
+        msg.attach_alternative(html_content, "text/html")
+        msg.send(fail_silently=False)
         return True
-    except Exception as e:
-        print(f"Cancellation Email sending failed: {e}")
+    except Exception:
         return False
 
 
@@ -464,10 +447,11 @@ def notify_owner_of_cancellation(booking):
     Notifies the restaurant owner that a customer has cancelled a booking.
     """
     from UsersHandling.models import RestaurantStaff
-    from django.core.mail import send_mail
+    from django.core.mail import EmailMultiAlternatives
+    from django.template.loader import render_to_string
+    from django.utils.html import strip_tags
     from django.conf import settings
     
-    # Find the owner of this restaurant
     owner_staff = RestaurantStaff.objects.filter(
         restaurant=booking.restaurant,
         role='OWNER'
@@ -477,34 +461,27 @@ def notify_owner_of_cancellation(booking):
         return False
     
     owner = owner_staff.user
-    subject = f"[DineSphere] Booking Cancelled — {booking.restaurant.name}"
+    subject = f'[DineSphere] Booking Cancelled — {booking.restaurant.name}'
     
-    message = f"""
-    Dear {owner.username},
-
-    A reservation at {booking.restaurant.name} has been cancelled by the customer.
-
-    Cancellation Details:
-    Customer: {booking.customer.username} ({booking.customer.email})
-    Booking Date: {booking.booking_start_datetime.strftime('%B %d, %Y')}
-    Time: {booking.booking_start_datetime.strftime('%I:%M %p')} - {booking.booking_end_datetime.strftime('%I:%M %p')}
-    Table(s): {', '.join([t.name for t in booking.tables.all()])}
-    Amount Refunded to Customer: ${booking.total_price}
-
-    Booking Reference: #{booking.id}
-
-    This table slot is now available again for new bookings.
-    """
+    # We can reuse the cancellation template or create a simple one
+    context = {
+        'booking': booking,
+        'cancelled_by': 'customer',
+        'is_owner_notification': True
+    }
+    
+    html_content = render_to_string('Reservations/emails/cancellation_email.html', context)
+    text_content = strip_tags(html_content)
     
     try:
-        send_mail(
-            subject=subject,
-            message=message,
-            from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@dinesphere.com'),
-            recipient_list=[owner.email],
-            fail_silently=True,
+        msg = EmailMultiAlternatives(
+            subject,
+            text_content,
+            settings.DEFAULT_FROM_EMAIL,
+            [owner.email]
         )
+        msg.attach_alternative(html_content, "text/html")
+        msg.send(fail_silently=False)
         return True
-    except Exception as e:
-        print(f"Owner notification email failed: {e}")
+    except Exception:
         return False

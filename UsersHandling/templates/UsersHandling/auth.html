@@ -81,7 +81,7 @@
 
                         <div class="input-group">
                             <i class="fas fa-envelope"></i>
-                            <input type="email" name="signup_email" placeholder="Email Address" value="{{ email|default:'' }}" autocomplete="email" required>
+                            <input type="email" name="signup_email" placeholder="Email Address" value="{{ email|default:'' }}" autocomplete="email" required pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$" title="Please enter a valid email address (e.g. user@example.com)">
                         </div>
 
                         <div class="input-group">
@@ -94,9 +94,9 @@
                                 <i class="fas fa-venus-mars"></i>
                                 <select name="gender" required>
                                     <option value="" disabled selected>Gender</option>
-                                    <option value="male" {% if gender == 'male' %}selected{% endif %}>Male</option>
-                                    <option value="female" {% if gender == 'female' %}selected{% endif %}>Female</option>
-                                    <option value="other" {% if gender == 'other' %}selected{% endif %}>Other</option>
+                                    <option value="M" {% if gender == 'male' or gender == 'M' %}selected{% endif %}>Male</option>
+                                    <option value="F" {% if gender == 'female' or gender == 'F' %}selected{% endif %}>Female</option>
+                                    <option value="O" {% if gender == 'other' or gender == 'O' %}selected{% endif %}>Other</option>
                                 </select>
                             </div>
                             <div class="input-group">

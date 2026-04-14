@@ -194,31 +194,29 @@ def getAnalytics(restaurant_id):
     from django.utils import timezone
     from datetime import timedelta
     
-    # Get confirmed bookings for this restaurant
-    confirmed_bookings = Booking.objects.filter(
-        restaurant_id=restaurant_id,
-        status='confirmed'
-    )
+    # Get bookings that count towards revenue: Pending, Confirmed, and Approved (Finished)
+    # Deduct Cancelled implicitly by not including them.
+    revenue_bookings = Booking.objects.filter(
+        restaurant_id=restaurant_id
+    ).exclude(status=Booking.STATUS_CANCELLED)
     
-    # Real booking statistics
-    total_bookings = confirmed_bookings.count()
+    # Real booking statistics (all non-cancelled)
+    total_bookings = revenue_bookings.count()
     
-    # Real revenue (from paid bookings)
-    total_revenue = confirmed_bookings.filter(
-        payment_status='paid'
-    ).aggregate(
+    # Real revenue
+    total_revenue = revenue_bookings.aggregate(
         total=Sum('total_price')
     )['total'] or 0
     
     # This week's bookings
     week_ago = timezone.now() - timedelta(days=7)
-    this_week_bookings = confirmed_bookings.filter(
+    this_week_bookings = revenue_bookings.filter(
         created_at__gte=week_ago
     ).count()
     
     # Last week's bookings for comparison
     two_weeks_ago = timezone.now() - timedelta(days=14)
-    last_week_bookings = confirmed_bookings.filter(
+    last_week_bookings = revenue_bookings.filter(
         created_at__gte=two_weeks_ago,
         created_at__lt=week_ago
     ).count()
@@ -231,13 +229,13 @@ def getAnalytics(restaurant_id):
     
     # Upcoming bookings (today and future)
     today = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    upcoming_bookings = confirmed_bookings.filter(
+    upcoming_bookings = revenue_bookings.filter(
         booking_start_datetime__gte=today
     ).count()
     
     # Average party size - calculated in Python because guest_count is a property
     # We take all confirmed bookings and average their guest_count property
-    all_guest_counts = [b.guest_count for b in confirmed_bookings]
+    all_guest_counts = [b.guest_count for b in revenue_bookings]
     avg_guests = sum(all_guest_counts) / len(all_guest_counts) if all_guest_counts else 0
     
     # Real staff count
@@ -265,8 +263,32 @@ def getAnalytics(restaurant_id):
         'staff_count': staff_count,
         'stats': order_stats,
         # Remove fake demographics - use real data only
-        'total_customers': confirmed_bookings.values('customer').distinct().count(),
+        'total_customers': revenue_bookings.values('customer').distinct().count(),
     }
+
+
+def auto_approve_bookings(restaurant_id):
+    """
+    Finds and approves all pending bookings older than 12 hours.
+    Used for the 'Auto-Approve' feature.
+    """
+    from django.utils import timezone
+    from datetime import timedelta
+    
+    limit = timezone.now() - timedelta(hours=12)
+    
+    pending_to_approve = Booking.objects.filter(
+        restaurant_id=restaurant_id,
+        status=Booking.STATUS_PENDING,
+        created_at__lte=limit
+    )
+    
+    approved_count = 0
+    for booking in pending_to_approve:
+        if booking.approve():
+            approved_count += 1
+            
+    return approved_count
 
 
 def isStaff(user):

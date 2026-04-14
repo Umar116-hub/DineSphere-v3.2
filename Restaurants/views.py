@@ -90,13 +90,12 @@ def staff_management(request):
 
     # --- HANDLE POST (Add Staff) ---
     if request.method == "POST":
-        username = request.POST.get("username")
-        add_restaurant_staff(request, username)
+        add_restaurant_staff(request)
         log_event(
             request.user.username,
             {
-                "action": "added_staff",
-                "details": f"Added staff member {username} to restaurant ID {restaurant_id}",
+                "action": "registered_new_staff",
+                "details": f"Registered new staff member for restaurant ID {restaurant_id}",
             },
         )
         return redirect("/business/staff-management/")
@@ -329,9 +328,45 @@ def switch_business(request):
 
         return JsonResponse({"status": "success", "new_name": name})
 
+@restrict_access
+def reservations(request):
+    restaurant_id = request.session.get("selected_restaurant_id")
+    if not restaurant_id:
+        return redirect("/business/registration/")
+    
+    restaurant = get_object_or_404(Restaurant, id=restaurant_id)
+    
+    # 1. Trigger Auto-Approve (Lazy logic)
+    from .Services import auto_approve_bookings
+    auto_approve_bookings(restaurant_id)
+    
+    # 2. Basic Query
+    reservations_query = Booking.objects.filter(restaurant=restaurant)
+    
+    # 3. Filtering
+    status_filter = request.GET.get('status') # 'finished' (Approved) or 'pending'
+    if status_filter:
+        reservations_query = reservations_query.filter(status=status_filter)
+        
+    # 4. Sorting
+    sort_by = request.GET.get('sort', 'created_at') # 'created_at' (Time Made) or 'total_price' (Price)
+    if sort_by == 'price':
+        reservations_query = reservations_query.order_by('-total_price') # Highest first
+    else:
+        # Default: Time Made (Newest first)
+        reservations_query = reservations_query.order_by('-created_at')
+    
+    return render(
+        request, "Restaurants/reservations.html", {
+            "reservations": reservations_query,
+            "current_status": status_filter,
+            "current_sort": sort_by
+        }
+    )
+
 
 # -------------------------------
-# Mark Booking as Finished
+# Mark Booking as Approved (Finished)
 # -------------------------------
 @restrict_access
 def markfinish(request):
@@ -340,8 +375,11 @@ def markfinish(request):
         booking = get_object_or_404(Booking, id=booking_id)
 
         try:
-            booking.mark_finished()
-            messages.success(request, "Booking marked as finished.")
+            if booking.approve():
+                # We could send an "Approved" email here if requested
+                messages.success(request, "Booking approved successfully.")
+            else:
+                messages.info(request, "Booking was already approved or cancelled.")
         except Exception as e:
             messages.error(request, str(e))
 
@@ -355,11 +393,17 @@ def markfinish(request):
 def markcancel(request):
     if request.method == "POST":
         booking_id = request.POST.get("booking_id")
+        reason = request.POST.get("reason", "No reason specified.")
         booking = get_object_or_404(Booking, id=booking_id)
 
         try:
             booking.cancel()
-            messages.success(request, "Booking cancelled.")
+            
+            # Send Email to Customer
+            from Reservations.services import send_booking_cancellation_email
+            send_booking_cancellation_email(booking, cancelled_by='staff', reason=reason)
+            
+            messages.success(request, f"Booking cancelled. Email sent to {booking.customer.email}.")
         except Exception as e:
             messages.error(request, str(e))
 

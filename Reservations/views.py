@@ -121,8 +121,8 @@ def placeOrder_view(request):
         messages.error(request, "Please enter a valid card number.")
         return redirect("checkout")
     
-    # Confirm the booking
-    booking.status = Booking.STATUS_CONFIRMED
+    # Update payment status but keep reservation status as PENDING (as per new 12h rule)
+    # The status is already pending from the initial booking creation.
     booking.payment_status = Booking.PAYMENT_STATUS_PAID
     booking.save()
     
@@ -174,7 +174,7 @@ def post_review(request, Restaurant_name):
             user=request.user,
             rating=rating,
             comment=text,
-            on_display=True  # Make it visible immediately
+            on_display=False  # Hidden by default for moderation
         )
 
         # Update ReviewSummary
@@ -237,12 +237,10 @@ def cancel_booking_view(request, booking_id):
         messages.error(request, 'This booking cannot be cancelled.')
         return redirect('profile')
 
-    # Enforce 2-hour cutoff rule if the booking is already confirmed (paid)
-    if booking.status == Booking.STATUS_CONFIRMED:
-        time_until_start = booking.booking_start_datetime - timezone.now()
-        if time_until_start < timedelta(hours=2):
-            messages.error(request, 'Too late to cancel online. Please call the restaurant directly.')
-            return redirect('profile')
+    # Filter: Enforce 12-hour cancellation rule
+    if not booking.can_cancel:
+        messages.error(request, 'The 12-hour cancellation window for this booking has expired.')
+        return redirect('profile')
 
     # Apply Cancellation and Refund Logic
     booking.status = Booking.STATUS_CANCELLED

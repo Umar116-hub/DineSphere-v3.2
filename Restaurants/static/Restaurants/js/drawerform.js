@@ -143,54 +143,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // --- MULTIPLE SELECTION LOGIC ---
-    let selectedIds = [];
-    const countDisplay = document.getElementById('selectedCount');
-    const deselectBtn = document.getElementById('deselectBtn');
-    const actionPanel = document.getElementById('actionPanel');
-
-    function updateActionPanel() {
-        if (countDisplay) countDisplay.innerText = selectedIds.length;
-        if (deselectBtn) deselectBtn.disabled = selectedIds.length === 0;
-        
-        if (actionPanel) {
-            if (selectedIds.length > 0) {
-                actionPanel.classList.add('show');
-            } else {
-                actionPanel.classList.remove('show');
-            }
-        }
-    }
-
-    document.querySelectorAll('.clickable-card').forEach(card => {
-        card.addEventListener('click', function() {
-            const id = this.dataset.id;
-            
-            // Toggle selection
-            if (this.classList.contains('selected')) {
-                this.classList.remove('selected');
-                selectedIds = selectedIds.filter(selId => selId !== id);
-                // If the last one was deselected, clear selectedData
-                if (selectedId === id) selectedId = null;
-            } else {
-                this.classList.add('selected');
-                selectedIds.push(id);
-                selectedId = id; // keeps reference to the most recently selected item for backwards comp
-                selectedData = { ...this.dataset };
-            }
-            updateActionPanel();
-        });
-    });
-
-    if (deselectBtn) {
-        deselectBtn.addEventListener('click', () => {
-            document.querySelectorAll('.clickable-card').forEach(c => c.classList.remove('selected'));
-            selectedIds = [];
-            selectedId = null;
-            selectedData = {};
-            updateActionPanel();
-        });
-    }
+    // Selection logic is now handled centrally in base.js via event delegation.
+    // deselectBtn listener is also now in base.js.
 
     // --- UNIVERSAL UPDATE ---
     const updateBtn = document.querySelector('.btn-update');
@@ -269,57 +223,72 @@ function formatTimeTo24h(timeStr) {
 form.addEventListener('submit', async (e) => {
     // PREVENT DOUBLE CLICKS: Disable submit button globally
     const submitBtn = form.querySelector('button[type="submit"]');
-    if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-    }
+    
+    // If it's a Business Info update, we need to handle File Uploads (Multipart)
+    // AJAX JSON doesn't support files, so we'll use a standard FormData submission if files are present
+    const hasFiles = form.querySelector('input[type="file"]')?.files.length > 0;
 
     if (form.action.includes('/update/')) {
         e.preventDefault();
-        
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData.entries());
 
-        // 1. Convert Time Fields (Fixes the ValidationError)
-        const timeFields = [
-            'default_opening_hour', 
-            'default_closing_hour', 
-            'adjusted_opening_hour', 
-            'adjusted_closing_hour'
-        ];
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        }
         
-        timeFields.forEach(field => {
-            if (data[field]) {
-                data[field] = formatTimeTo24h(data[field]);
+        // 1. Prepare Data
+        let bodyContent;
+        let headers = {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        };
+
+        if (currentModel === 'business' || hasFiles) {
+            // Use FormData for Multipart support (Images)
+            bodyContent = new FormData(form);
+            // Browser sets boundary automatically for FormData, so don't set Content-Type header
+        } else {
+            // Use JSON for other simple models
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+
+            // Convert Time Fields
+            const timeFields = ['default_opening_hour', 'default_closing_hour', 'adjusted_opening_hour', 'adjusted_closing_hour'];
+            timeFields.forEach(field => { if (data[field]) data[field] = formatTimeTo24h(data[field]); });
+
+            // Handle seating types
+            const seatingTypes = [];
+            form.querySelectorAll('input[name="seating_types"]:checked').forEach(cb => seatingTypes.push(cb.value));
+            if (seatingTypes.length > 0) data['seating_types'] = seatingTypes;
+
+            // Boolean logic
+            form.querySelectorAll('input[type="checkbox"]:not([name="seating_types"])').forEach(cb => data[cb.name] = cb.checked);
+
+            bodyContent = JSON.stringify(data);
+            headers['Content-Type'] = 'application/json';
+        }
+
+        // 2. Send Fetch request
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: headers,
+                body: bodyContent
+            });
+
+            const result = await response.json();
+            if (result.status === 'success') {
+                location.reload();
+            } else {
+                alert("Update failed! Check console for details.");
+                console.error(result);
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Save Changes';
+                }
             }
-        });
-
-        // 2. Many-to-Many logic...
-        const seatingTypes = [];
-        form.querySelectorAll('input[name="seating_types"]:checked').forEach(cb => {
-            seatingTypes.push(cb.value);
-        });
-        if (seatingTypes.length > 0) data['seating_types'] = seatingTypes;
-
-        // 3. Boolean logic...
-        form.querySelectorAll('input[type="checkbox"]:not([name="seating_types"])').forEach(cb => {
-            data[cb.name] = cb.checked;
-        });
-
-        // Send Fetch request...
-        const response = await fetch(form.action, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-            },
-            body: JSON.stringify(data)
-        });
-
-        const result = await response.json();
-        if (result.status === 'success') location.reload();
-        else {
-            alert("Update failed!");
+        } catch (error) {
+            console.error("Submission error:", error);
+            alert("Network error occurred.");
             if (submitBtn) {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = 'Save Changes';
@@ -327,7 +296,7 @@ form.addEventListener('submit', async (e) => {
         }
     }
     // If it's NOT an /update/ action (e.g. adding a table), it simply proceeds 
-    // with the normal HTML form POST, but the button is safely disabled!
+    // with the normal HTML form POST (automatic browser behavior)
 });
 });
 

@@ -214,7 +214,7 @@ class Review(models.Model):
     rating = models.PositiveIntegerField()
     comment = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    on_display = models.BooleanField(default=True)
+    on_display = models.BooleanField(default=False)
 
     def add_to_display(self):
         self.on_display = True

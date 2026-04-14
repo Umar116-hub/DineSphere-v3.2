@@ -101,28 +101,30 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     const logoutBtn = document.getElementById('dashboard-logout');
+    const logoutBtnMobile = document.getElementById('dashboard-logout-mobile');
     const modal = document.getElementById('confirmModal');
     const modalOverlay = document.getElementById('modalOverlay');
     const modalConfirm = document.getElementById('modalConfirm');
     const modalMessage = document.getElementById('modalMessage');
     const modalTitle = modal.querySelector('h3');
 
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', function () {
-            // 1. Update Modal Content for Logout
-            modalTitle.innerText = "Leaving so soon?";
-            modalMessage.innerText = "Are you sure you want to log out of your dashboard?";
-            modalConfirm.innerText = "Logout";
-            modalConfirm.style.backgroundColor = "var(--primary-color)"; // Match your teal theme
+    const triggerLogout = function () {
+        // 1. Update Modal Content for Logout
+        modalTitle.innerText = "Leaving so soon?";
+        modalMessage.innerText = "Are you sure you want to log out of your dashboard?";
+        modalConfirm.innerText = "Logout";
+        modalConfirm.style.backgroundColor = "var(--primary-color)"; // Match your teal theme
 
-            // 2. Set the global pending action to the logout URL
-            window.pendingActionUrl = "/uh/logout/";
+        // 2. Set the global pending action to the logout URL
+        window.pendingActionUrl = "/uh/logout/";
 
-            // 3. Show Modal
-            modal.classList.add('show');
-            modalOverlay.classList.add('show');
-        });
-    }
+        // 3. Show Modal
+        modal.classList.add('show');
+        modalOverlay.classList.add('show');
+    };
+
+    if (logoutBtn) logoutBtn.addEventListener('click', triggerLogout);
+    if (logoutBtnMobile) logoutBtnMobile.addEventListener('click', triggerLogout);
 
     // --- Modular Confirm Handler ---
     // This handles Logout, Deletions, or Toggles based on whatever is in window.pendingActionUrl
@@ -215,105 +217,68 @@ triggerUpdate('tables', selectedId, formData);
 */
 
 document.addEventListener('DOMContentLoaded', () => {
-    const cards = document.querySelectorAll('.clickable-card');
-    const deleteBtn = document.getElementById('deleteBtn');
+    // --- UNIVERSAL CARD SELECTION SYSTEM ---
     const selectedCountText = document.getElementById('selectedCount');
     const actionPanel = document.getElementById('actionPanel');
-    const actionButtons = document.querySelector('.action-buttons');
 
-    let isSelectionMode = false;
-    let longPressTimer;
-
-    const isTablesPage = window.location.pathname.includes('/business/tables/');
-    const permanentButtons = actionButtons ? actionButtons.querySelectorAll('.panel-btn').length : 0;
-
-    const syncUI = () => {
+    // Function to update the Selection UI
+    window.syncSelectionUI = function() {
         const selectedCards = document.querySelectorAll('.clickable-card.selected');
         const count = selectedCards.length;
-
         if (selectedCountText) selectedCountText.innerText = count;
 
         if (count > 0) {
-            if (deleteBtn) deleteBtn.disabled = false;
+            actionPanel?.classList.add('show');
         } else {
-            if (deleteBtn) deleteBtn.disabled = true;
+            actionPanel?.classList.remove('show');
         }
     };
 
-    const enterSelectionMode = () => {
-        if (isSelectionMode) return;
-        isSelectionMode = true;
-        actionPanel.classList.add('show');
-        
-        // Push state for back button handling
-        if (window.history.state?.selection !== true) {
-            window.history.pushState({ selection: true }, '');
-        }
-    };
-
-    const exitSelectionMode = (fromPopState = false) => {
-        isSelectionMode = false;
-        cards.forEach(c => c.classList.remove('selected'));
-        selectedCountText.innerText = '0';
-        
-        if (permanentButtons === 0) {
-            actionPanel.classList.remove('show');
-        }
-
-        if (!fromPopState && window.history.state?.selection === true) {
-            window.history.back();
-        }
-    };
-
-    // Handle Back Button
-    window.addEventListener('popstate', (event) => {
-        if (isSelectionMode) {
-            exitSelectionMode(true);
-        }
-    });
-
-    // Card Click/Tap Logic
-    cards.forEach(card => {
-        // Desktop Click / Mobile selection toggle
-        card.addEventListener('click', (e) => {
-            if (isSelectionMode || permanentButtons > 0) {
-                const isAlreadySelected = card.classList.contains('selected');
-                card.classList.toggle('selected');
-                syncUI();
-            } else {
-                // Not in selection mode
-                card.classList.add('selected');
-                enterSelectionMode();
-                syncUI();
+    // Function to inject X icons into all cards (even hidden/dynamically added ones)
+    window.injectSelectIcons = function() {
+        const cards = document.querySelectorAll('.clickable-card');
+        cards.forEach(card => {
+            if (!card.querySelector('.unselect-x')) {
+                const xIcon = document.createElement('i');
+                xIcon.className = 'fas fa-times unselect-x';
+                xIcon.title = 'Unselect this item';
+                card.appendChild(xIcon);
             }
         });
+    };
 
-        // Long Press detection
-        card.addEventListener('touchstart', (e) => {
-            if (isSelectionMode) return;
-            longPressTimer = setTimeout(() => {
-                card.classList.add('selected');
-                enterSelectionMode();
-                syncUI();
-                // Vibrate if supported
-                if (navigator.vibrate) navigator.vibrate(50);
-            }, 600); // 600ms for long press
-        }, { passive: true });
+    // 1. Initial Injection
+    injectSelectIcons();
 
-        card.addEventListener('touchend', () => {
-            clearTimeout(longPressTimer);
-        }, { passive: true });
+    // 2. Global Event Delegation for Clicks
+    document.addEventListener('click', (e) => {
+        // Handle Unselect X click
+        if (e.target.classList.contains('unselect-x')) {
+            e.stopPropagation();
+            const card = e.target.closest('.clickable-card');
+            if (card) {
+                card.classList.remove('selected');
+                syncSelectionUI();
+            }
+            return;
+        }
 
-        card.addEventListener('touchmove', () => {
-            clearTimeout(longPressTimer);
-        }, { passive: true });
+        // Handle Card click
+        const card = e.target.closest('.clickable-card');
+        if (card) {
+            card.classList.toggle('selected');
+            syncSelectionUI();
+        }
     });
 
-    // Handle initial state
-    if (permanentButtons > 0) {
-        actionPanel.classList.add('show');
-    }
-    syncUI();
+    // 3. Deselect All Button
+    document.getElementById('deselectBtn')?.addEventListener('click', () => {
+        document.querySelectorAll('.clickable-card.selected').forEach(c => c.classList.remove('selected'));
+        syncSelectionUI();
+    });
+
+    // Run sync on load
+    syncSelectionUI();
 });
 
 document.addEventListener('DOMContentLoaded', () => {

@@ -599,9 +599,9 @@
             <textarea id="reviewText" rows="3" placeholder="Tell us about your visit..."></textarea>
             
             <div style="margin-top: 15px; display: flex; gap: 10px;">
-                {% if request.user.role == 'OWNER' %}
+                {% if request.user.role == 'OWNER' or request.user.role == 'STAFF' %}
                     <div style="background: rgba(17, 24, 39, 0.05); padding: 15px; border-radius: 8px; border-left: 4px solid #111827;">
-                        <p style="font-size: 0.9rem; margin: 0; color: #111827;"><strong>Owner Account:</strong> Reviews and reservations are disabled for business accounts.</p>
+                        <p style="font-size: 0.9rem; margin: 0; color: #111827;"><strong>Business Account:</strong> Reviews and reservations are disabled for Owners and Staff.</p>
                     </div>
                 {% elif request.user.is_authenticated %}
                     <button type="button" class="post-review-btn" id="submitReviewBtn">Post Review</button>
@@ -634,9 +634,9 @@
         </div>
         <p style="font-size: 0.8rem; color: #888; margin-bottom: 20px;">* Includes 5-minute table lock guarantee</p>
         
-        {% if request.user.role == 'OWNER' %}
+        {% if request.user.role == 'OWNER' or request.user.role == 'STAFF' %}
             <div style="background: #fee2e2; color: #b91c1c; padding: 15px; border-radius: 10px; text-align: center; font-weight: 600;">
-                Owners cannot book reservations.
+                Business accounts cannot book reservations.
             </div>
         {% else %}
             <button class="reserve-lock-btn"

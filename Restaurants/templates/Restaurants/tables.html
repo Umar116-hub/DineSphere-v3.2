@@ -148,11 +148,55 @@
     </div>
 
     <form id="drawerForm" class="drawer-form" method="post" action="/business/tables/">
-                {% csrf_token %}
-                {{ form.as_p }}
+        {% csrf_token %}
+        
+        <div class="form-section">
+            <h3 class="section-title"><i class="fas fa-info-circle"></i> Basic Info</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Table Name</label>
+                    {{ form.name }}
+                </div>
+                <div class="form-group">
+                    <label>Base Price ($)</label>
+                    {{ form.base_price }}
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3 class="section-title"><i class="fas fa-chair"></i> Seating & Size</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Table Size (Capacity)</label>
+                    {{ form.table_size }}
+                </div>
+                <div class="form-group">
+                    <label>Seating Type</label>
+                    {{ form.seating_type }}
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h3 class="section-title"><i class="fas fa-toggle-on"></i> Status & Logic</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <div class="checkbox-wrapper">
+                        {{ form.is_available }} <span>Available for Booking</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="checkbox-wrapper">
+                        {{ form.is_combinable }} <span>Can be Combined</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="drawer-footer">
             <button type="button" class="btn-secondary" id="clearForm">Clear</button>
-            <button type="submit" class="btn-primary">Save Changes</button>
+            <button type="submit" class="btn-primary">Save Table</button>
         </div>
     </form>
 </div>

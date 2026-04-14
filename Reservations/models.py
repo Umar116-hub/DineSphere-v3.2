@@ -60,14 +60,28 @@ class Booking(models.Model):
         if self.customer and self.customer.role != 'CUSTOMER':
             raise ValidationError("Only customer accounts can make reservations.")
 
-    def cancel(self):
-        if self.status == self.STATUS_PENDING:
-            self.status = self.STATUS_CANCELLED
-            self.save()
-        else:
-            raise ValueError("Cannot cancel a booking that is already finished or cancelled.")
+    @property
+    def can_cancel(self):
+        """User can only cancel within 12 hours of placing the booking."""
+        from django.utils import timezone
+        from datetime import timedelta
+        if self.status != self.STATUS_PENDING:
+            return False
+        return timezone.now() < (self.created_at + timedelta(hours=12))
 
-    def mark_finished(self):
+    def cancel(self):
+        """Cancels the booking."""
+        self.status = self.STATUS_CANCELLED
+        self.save()
+
+    def approve(self):
+        """Marks the booking as approved (maps to existing finished status)."""
         if self.status == self.STATUS_PENDING:
             self.status = self.STATUS_FINISHED
             self.save()
+            return True
+        return False
+
+    def mark_finished(self):
+        """Wrapper for approve() to maintain backward compatibility."""
+        return self.approve()

@@ -63,29 +63,21 @@ def profile(request):
 
     user_profile = CustomerProfile.objects.filter(user=request.user).first()
     bookings = Booking.objects.filter(customer=request.user).order_by('-created_at')
-    completed_booking = bookings.filter(status=Booking.STATUS_FINISHED)
-    confirmed_booking = bookings.filter(status=Booking.STATUS_CONFIRMED)
-    pending_booking = bookings.filter(status=Booking.STATUS_PENDING)
-    canceled_booking = bookings.filter(status=Booking.STATUS_CANCELLED)
-    
     # Reviews
     from Restaurants.models import Review
     user_reviews = Review.objects.filter(user=request.user).order_by('-created_at')
 
-    # Owner restaurants
+    # Managed restaurants (Owner/Staff)
     from UsersHandling.models import RestaurantStaff
-    owner_restaurants = RestaurantStaff.objects.filter(
-        user=request.user, role='OWNER'
+    managed_restaurants = RestaurantStaff.objects.filter(
+        user=request.user
     ).select_related('restaurant')
     
     return render(request, "Core/Profile.html", {
         "user_profile": user_profile,
         "footer": False,
-        "completed_booking": completed_booking if completed_booking.exists() else None,
-        "confirmed_booking": confirmed_booking if confirmed_booking.exists() else None,
-        "pending_booking": pending_booking if pending_booking.exists() else None,
-        "canceled_booking": canceled_booking if canceled_booking.exists() else None,
-        "owner_restaurants": owner_restaurants,
+        "bookings": bookings,
+        "managed_restaurants": managed_restaurants,
         "user_reviews": user_reviews,
     })
 

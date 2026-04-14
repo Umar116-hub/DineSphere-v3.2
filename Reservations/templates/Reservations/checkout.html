@@ -74,7 +74,7 @@
                 </div>
                 <div class="input-group">
                     <label for="security-code" style="color: transparent;">Security Code</label>
-                    <input type="text" id="security-code" class="input-checkout" placeholder="Security code" required onfocus="this.style.outline='none';this.style.boxShadow='none'">
+                    <input type="text" id="security-code" class="input-checkout" placeholder="Security code" required maxlength="4" pattern="\d{3,4}" title="Security code must be 3 or 4 digits" onfocus="this.style.outline='none';this.style.boxShadow='none'" oninput="this.value = this.value.replace(/\D/g, '').substring(0, 4);">
                 </div>
             </div>
 
