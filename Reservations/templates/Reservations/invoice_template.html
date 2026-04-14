@@ -144,7 +144,8 @@
             <div class="invoice-title">
                 <h1>INVOICE</h1>
                 <p><strong>Invoice #:</strong> {{ invoice_number }}</p>
-                <p><strong>Date:</strong> {{ invoice_date }}</p>
+                <p><strong>Invoice Date:</strong> {{ invoice_date }}</p>
+                <p><strong>Made at:</strong> {{ booking.created_at|date:"F d, Y" }} {{ booking.created_at|time:"g:i A" }}</p>
                 <p><strong>Booking Ref:</strong> #{{ booking.id }}</p>
             </div>
         </div>

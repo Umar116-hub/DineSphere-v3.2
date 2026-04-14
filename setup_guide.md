@@ -39,8 +39,6 @@ source venv/bin/activate
 
 ---
 
-## 📦 3. Install Dependencies  
-
 Ensure you are inside your virtual environment, then install all project requirements:
 ```bash
 pip install --upgrade pip
@@ -49,7 +47,23 @@ pip install -r requirements.txt
 
 ---
 
-## 🗄️ 4. Apply Migrations
+## 🔑 4. Environment Configuration  
+
+DineSphere uses environment variables for sensitive settings like emails and security keys.
+
+1. **Copy the example file:**
+   ```bash
+   cp .env.example .env
+   ```
+   *(On Windows, use `copy .env.example .env`)*
+
+2. **Open `.env`** in your text editor and fill in your details:
+   - **SMTP Settings**: Required for sending confirmation emails. We recommend [Brevo](https://www.brevo.com/).
+   - **Secret Key**: You can keep the default for local development.
+
+---
+
+## 🗄️ 5. Apply Migrations
 
 Set up the default SQLite database:
 ```bash
