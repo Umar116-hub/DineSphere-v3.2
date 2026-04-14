@@ -204,7 +204,7 @@
                         <td>{{ table.name }}</td>
                         <td>{{ table.seating_type.name|default:"Standard" }}</td>
                         <td>{{ table.capacity }} guests</td>
-                        <td>${{ table.calculate_price }}</td>
+                        <td>${{ table.calculate_price|floatformat:2 }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

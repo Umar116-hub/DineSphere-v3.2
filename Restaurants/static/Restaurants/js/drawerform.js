@@ -7,8 +7,6 @@ const PageMappers = {
     form.querySelector('[name="base_price"]').value = data.price;
     form.querySelector('[name="table_size"]').value = data.size;
     form.querySelector('[name="seating_type"]').value = data.seating;
-    form.querySelector('[name="is_combinable"]').checked = data.combinable === "true";
-    form.querySelector('[name="is_available"]').checked = data.available === "true";
 },
     // Logic for Staff Page
     staff: (form, data) => {
@@ -102,8 +100,8 @@ if (card && seatingCheckboxes.length > 0) {
 };
 
 document.addEventListener('DOMContentLoaded', function() {
-    let selectedId = null;
-    let selectedData = {};
+    window.selectedId = null;
+    window.selectedData = {};
     
     // Determine which page we are on
     const currentModel = document.querySelector('.which-model').dataset.model.trim();
@@ -118,8 +116,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (addBtn) {
         addBtn.addEventListener('click', () => {
-            selectedId = null;         // clear selection
-            selectedData = {};         // clear data
+            window.selectedId = null;         // clear selection
+            window.selectedData = {};         // clear data
             form.reset();              // clear the form
             form.action = window.location.href;
             drawerOverlay.classList.add('show');
@@ -150,14 +148,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const updateBtn = document.querySelector('.btn-update');
     if (updateBtn) {
         updateBtn.addEventListener('click', () => {
-            if (selectedIds.length === 0) return alert("Please select an item first!");
-            if (selectedIds.length > 1) return alert("Please select only ONE item to edit!");
+            const selectedCards = document.querySelectorAll('.clickable-card.selected');
+            if (selectedCards.length === 0) return alert("Please select an item first!");
+            if (selectedCards.length > 1) return alert("Please select only ONE item to edit!");
 
             const mapper = PageMappers[currentModel];
             if (mapper) {
                 document.getElementById('drawerOverlay').classList.add('show');
                 document.getElementById('sideDrawer').classList.add('open');
-                mapper(form, selectedData);
+                mapper(form, window.selectedData);
             } else {
                 console.error(`No mapper defined for model: ${currentModel}`);
             }
@@ -168,14 +167,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const deleteBtn = document.querySelector('.btn-delete');
     if (deleteBtn) {
         deleteBtn.addEventListener('click', () => {
-            if (selectedIds.length === 0) return alert("Please select an item first!");
-            if (selectedIds.length > 1) return alert("Batch delete is currently disabled. Please select only ONE item to delete!");
+            const selectedCards = document.querySelectorAll('.clickable-card.selected');
+            if (selectedCards.length === 0) return alert("Please select an item first!");
+            if (selectedCards.length > 1) return alert("Batch delete is currently disabled. Please select only ONE item to delete!");
             
             const modal = document.getElementById('confirmModal');
-            document.getElementById('modalMessage').innerText = `Delete ${selectedData.name || 'this item'}?`;
+            document.getElementById('modalMessage').innerText = `Delete ${window.selectedData.name || 'this item'}?`;
             modal.classList.add('show');
             document.getElementById('modalOverlay').classList.add('show');
-            window.pendingDeleteUrl = window.location.origin + window.location.pathname + `delete/${selectedId}/`;
+            window.pendingActionUrl = window.location.origin + window.location.pathname + `delete/${window.selectedId}/`;
         });
     }
 

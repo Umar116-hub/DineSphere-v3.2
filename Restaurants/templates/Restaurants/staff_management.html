@@ -71,7 +71,8 @@ staff
 <div class="item-card clickable-card" 
      data-label="adventure" 
      data-id="{{ worker.id }}"
-     data-user="{{ worker.user.username }}">
+     data-user="{{ worker.user.username }}"
+     data-is-self="{% if worker.user == user %}true{% else %}false{% endif %}">
 
     <div class="card-accent-bar"></div>
 

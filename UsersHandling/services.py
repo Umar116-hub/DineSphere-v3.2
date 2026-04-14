@@ -127,7 +127,12 @@ def remove_restaurant_staff(request, staff_id):
     # We use staff_id (the ID of the RestaurantStaff record, not the User ID)
     staff_profile = get_object_or_404(RestaurantStaff, id=staff_id)
     
-    # Security check: Ensure the person deleting is an OWNER of this restaurant
+    # 1. Self-deletion check: Owner cannot fire themselves
+    if staff_profile.user == request.user:
+        messages.error(request, "You cannot fire yourself. Ownership must be transferred or handled via account management.")
+        return redirect('/business/staff-management/')
+
+    # 2. Security check: Ensure the person deleting is an OWNER of this restaurant
     owner_check = RestaurantStaff.objects.filter(
         user=request.user, 
         restaurant=staff_profile.restaurant, 
@@ -135,9 +140,12 @@ def remove_restaurant_staff(request, staff_id):
     ).exists()
 
     if owner_check:
-        username = staff_profile.user.username
-        staff_profile.delete()
-        messages.success(request, f"Access revoked for {username}.")
+        target_user = staff_profile.user
+        username = target_user.username
+        # Deleting the user account completely as requested. 
+        # This will cascade delete the RestaurantStaff profile.
+        target_user.delete()
+        messages.success(request, f"Account and access deleted for {username}.")
     else:
         messages.error(request, "You do not have permission to remove staff.")
 

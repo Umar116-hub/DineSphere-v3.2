@@ -58,8 +58,7 @@ def get_available_tables(restaurant, date, start_time, end_time):
     ).values_list('tables__id', flat=True)
 
     return Table.objects.filter(
-        restaurant=restaurant,
-        is_available=True
+        restaurant=restaurant
     ).exclude(id__in=booked_tables).exclude(id__in=locked_tables)
 
 
@@ -254,42 +253,6 @@ def create_booking(request, Restaurant_name):
     }
 
 
-def mark_todays_booked_tables_unavailable(restaurant):
-    """
-    Fetches all of today's bookings for a given restaurant and marks
-    all tables in those bookings as unavailable.
-    
-    Args:
-        restaurant (Restaurant): Restaurant instance.
-    
-    Returns:
-        int: Number of tables updated
-    """
-
-    # Get current timezone-aware now
-    now = timezone.localtime(timezone.now())
-    today_start = datetime.combine(now.date(), time.min)  # 00:00 today
-    today_end = datetime.combine(now.date(), time.max)    # 23:59:59.999999 today
-
-    # Make them timezone-aware if needed
-    today_start = timezone.make_aware(today_start, timezone.get_current_timezone())
-    today_end = timezone.make_aware(today_end, timezone.get_current_timezone())
-
-    # Fetch today's bookings for this restaurant
-    todays_bookings = Booking.objects.filter(
-        restaurant=restaurant,
-        booking_start_datetime__lte=today_end,
-        booking_end_datetime__gte=today_start,
-        status=Booking.STATUS_PENDING  # Only pending bookings occupy tables
-    )
-
-    # Collect all tables in these bookings
-    tables_to_update = Table.objects.filter(bookings__in=todays_bookings).distinct()
-
-    # Bulk update availability
-    updated_count = tables_to_update.update(is_available=False)
-
-    return updated_count
 
 
 
@@ -307,11 +270,7 @@ def view_all_booking(restaurant: Restaurant, date_str=None, start_time_str=None,
         dict: Contains restaurant and tables data
     """
 
-    # Reset availability and mark booked tables
-    restaurant.tables.update(is_available=True)
-    mark_todays_booked_tables_unavailable(restaurant)
-
-    available_tables = restaurant.tables.filter(is_available=True)
+    available_tables = restaurant.tables.all()
 
     if date_str and start_time_str and end_time_str:
         # Parse strings into Python objects

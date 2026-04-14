@@ -247,7 +247,7 @@ def getAnalytics(restaurant_id):
     order_stats = Booking.objects.filter(restaurant_id=restaurant_id).aggregate(
         pending_count=Count('id', filter=Q(status=Booking.STATUS_PENDING)),
         confirmed_count=Count('id', filter=Q(status=Booking.STATUS_CONFIRMED)),
-        finished_count=Count('id', filter=Q(status=Booking.STATUS_FINISHED)),
+        approved_count=Count('id', filter=Q(status=Booking.STATUS_FINISHED)),
         cancelled_count=Count('id', filter=Q(status=Booking.STATUS_CANCELLED)),
         total_bookings=Count('id')
     )

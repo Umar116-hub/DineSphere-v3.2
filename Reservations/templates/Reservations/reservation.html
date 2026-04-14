@@ -567,7 +567,7 @@
                         onclick="toggleTableSelection(this)">
                         <p><strong>{{ t.name }}</strong></p>
                         <p><i class="fas fa-users"></i> {{ t.capacity }} Seats</p>
-                        <p><strong>${{ t.price }}</strong>/hr</p>
+                        <p><strong>${{ t.price|floatformat:2 }}</strong>/hr</p>
                     </div>
                     {% endfor %}
                 </div>

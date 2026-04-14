@@ -38,8 +38,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 return alert("Please select a staff member to remove.");
             }
 
+            const isSelf = selectedCard.dataset.isSelf === "true";
             const staffId = selectedCard.dataset.id;
             const staffName = selectedCard.querySelector('.user-display-name')?.textContent || "this user";
+
+            if (isSelf) {
+                return alert("You cannot fire yourself! Please contact system administration for account deletion.");
+            }
 
             const modal = document.getElementById('confirmModal');
             const modalOverlay = document.getElementById('modalOverlay');

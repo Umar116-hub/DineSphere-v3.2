@@ -122,7 +122,7 @@
                                 <p class="product-description">Best Local Restaurant Ideal for burgers</p>
                             </div>
                         </div>
-                        <span class="product-price">{{price}}</span>
+                        <span class="product-price">{{price|floatformat:2}}</span>
                     </div>
 
                     <!-- Accordion Content (Key-Value Pairs and Edit Button) -->
@@ -156,7 +156,7 @@
             <div class="price-summary">
                 <div class="price-row total-price">
                     <span class="label">Total price:</span>
-                    <span class="value">{{ price }}</span>
+                    <span class="value">{{ price|floatformat:2 }}</span>
                 </div>
                 <div class="price-row vat-row">
                     <span class="label">Vat: 0%</span>

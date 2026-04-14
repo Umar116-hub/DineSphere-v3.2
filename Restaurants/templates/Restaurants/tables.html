@@ -80,26 +80,27 @@
         </div>
 
         <div class="filter-group">
-            <span class="filter-label">Label</span>
-            <select class="custom-select">
-                <option value="all">All Styles</option>
-                <option value="adventure">Adventure</option>
-                <option value="iconic">Iconic</option>
-                <option value="modern">Modern</option>
+            <span class="filter-label">Seating Type</span>
+            <select class="custom-select" id="seatingFilter">
+                <option value="all">All Types</option>
+                {% for type in seating_types %}
+                <option value="{{ type.id }}">{{ type.name }}</option>
+                {% endfor %}
             </select>
         </div>
 
-        <div class="checkbox-list">
-            <label class="checkbox-item">
-                <input type="checkbox" checked> Available
-            </label>
-            <label class="checkbox-item">
-                <input type="checkbox"> Budget (Cheap)
-            </label>
+        <div class="filter-group">
+            <span class="filter-label">Size/Capacity</span>
+            <select class="custom-select" id="sizeFilter">
+                <option value="all">All Sizes</option>
+                {% for size in table_sizes %}
+                <option value="{{ size.id }}">{{ size.size }} ({{ size.capacity }} Seats)</option>
+                {% endfor %}
+            </select>
         </div>
 
         <div class="filter-group">
-            <input type="text" class="custom-select" placeholder="Search tables..." style="width: 200px;">
+            <input type="text" class="custom-select" placeholder="Search tables..." style="width: 200px;" id="tableSearchInput">
         </div>
     </header>
 
@@ -107,27 +108,30 @@
         {% for table in CP__Selected.tables.all %}
 
         <div class="item-card clickable-card" 
-            data-label="adventure" 
             data-price="{{table.base_price}}" 
             data-id="{{ table.id }}" 
             data-name="{{ table.name }}"
-            data-available="{{ table.is_available|yesno:'true,false' }}" 
-            data-combinable="{{ table.is_combinable|yesno:'true,false' }}"
             data-size="{{ table.table_size.id }}" 
             data-seating="{{ table.seating_type.id }}">
             <div class="item-image">
-                {% if table.is_available %}
-                <span class="status-badge status-available">Available</span>
-                {% else %}
-                <span class="status-badge status-unavailable">Booked</span>
-                {% endif %}
+                <div class="capacity-hint">
+                    <i class="fas fa-users"></i> {{ table.capacity }}
+                </div>
+                <div class="seating-badge">
+                    {{ table.seating_type|default:"General" }}
+                </div>
             </div>
             <div class="item-content">
                 <div>
-                    <span class="item-label">Adventure</span>
+                    <span class="item-label">{{ table.seating_type|default:"General Area" }} | Size: {{ table.size|default:"Standard" }}</span>
                     <h3 class="item-title">{{ table.name }}</h3>
                 </div>
-                <div class="item-price">${{table.calculate_price}}/hr</div>
+                <div class="item-price">
+                    ${{table.calculate_price|floatformat:2}}/hr 
+                    <span style="font-size: 0.8rem; color: #666; font-weight: normal; margin-left: 8px;">
+                        <i class="fas fa-users"></i> {{ table.capacity }}
+                    </span>
+                </div>
             </div>
         </div>
 
@@ -182,21 +186,6 @@
             </div>
         </div>
 
-        <div class="form-section">
-            <h3 class="section-title"><i class="fas fa-toggle-on"></i> Status & Logic</h3>
-            <div class="form-grid">
-                <div class="form-group">
-                    <div class="checkbox-wrapper">
-                        {{ form.is_available }} <span>Available for Booking</span>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <div class="checkbox-wrapper">
-                        {{ form.is_combinable }} <span>Can be Combined</span>
-                    </div>
-                </div>
-            </div>
-        </div>
 
         <div class="drawer-footer">
             <button type="button" class="btn-secondary" id="clearForm">Clear</button>
@@ -263,6 +252,39 @@ function fetchData(type) {
 function closeViewModal() {
     document.getElementById('viewModal').style.display = 'none';
 }
+
+// Table Filtering Logic
+document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('tableSearchInput');
+    const seatingFilter = document.getElementById('seatingFilter');
+    const sizeFilter = document.getElementById('sizeFilter');
+
+    function filterTables() {
+        const query = searchInput.value.toLowerCase();
+        const seating = seatingFilter.value;
+        const size = sizeFilter.value;
+
+        document.querySelectorAll('.clickable-card').forEach(card => {
+            const name = card.dataset.name.toLowerCase();
+            const cardSeating = card.dataset.seating;
+            const cardSize = card.dataset.size;
+
+            const matchesSearch = name.includes(query);
+            const matchesSeating = seating === 'all' || cardSeating === seating;
+            const matchesSize = size === 'all' || cardSize === size;
+
+            if (matchesSearch && matchesSeating && matchesSize) {
+                card.style.display = '';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+
+    searchInput?.addEventListener('input', filterTables);
+    seatingFilter?.addEventListener('change', filterTables);
+    sizeFilter?.addEventListener('change', filterTables);
+});
 
 // Manage Menu Toggle Logic
 document.getElementById('manageMenuTrigger')?.addEventListener('click', function(e) {

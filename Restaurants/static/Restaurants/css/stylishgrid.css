@@ -128,15 +128,20 @@
     position: relative;
 }
 
-.status-badge {
+.capacity-hint {
     position: absolute;
     top: 15px;
     right: 15px;
-    padding: 5px 12px;
+    background: rgba(17, 24, 39, 0.8);
+    color: white;
+    padding: 6px 12px;
     border-radius: 20px;
-    font-size: 0.7rem;
-    font-weight: 800;
-    text-transform: uppercase;
+    font-size: 0.85rem;
+    font-weight: 700;
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .status-available, .status-pending {
@@ -161,12 +166,28 @@
 }
 
 .item-label {
-    color: var(--ternary-color);
+    color: #4b5563; /* Darker grey for better contrast */
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    display: block;
+    letter-spacing: 0.5px;
+}
+
+.seating-badge {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    background: var(--primary-color);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 6px;
     font-size: 0.7rem;
     font-weight: 800;
     text-transform: uppercase;
-    margin-bottom: 5px;
-    display: block;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    z-index: 10;
 }
 
 .item-title {
@@ -184,36 +205,25 @@
 /* Comprehensive Mobile Overrides */
 @media (max-width: 768px) {
     .filter-panel {
-        display: grid !important;
-        grid-template-columns: 1fr 1fr; /* 2-column layout */
-        gap: 10px;
-        padding: 10px;
-        overflow: visible !important;
-        z-index: 2000;
-        position: relative;
-    }
-
-    .view-switcher, 
-    .filter-group:has(.view-switcher) {
-        display: none !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 15px;
+        padding: 15px;
     }
 
     .filter-group {
         width: 100% !important;
         flex-direction: column !important;
-        align-items: flex-start !important;
-        gap: 4px !important;
+        align-items: stretch !important;
+        gap: 6px !important;
     }
 
-    /* Filters will naturally fill the 1fr 1fr grid columns in order */
-    .manage-menu-group {
-        grid-column: 1;
-        z-index: 2010;
-        position: relative;
+    .custom-select {
+        width: 100% !important;
     }
 
-    .filter-panel .filter-group:last-child {
-        grid-column: 1 / span 2; /* Search spans full width */
+    .manage-menu-container {
+        width: 100%;
     }
 
     .checkbox-list {

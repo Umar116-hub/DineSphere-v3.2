@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 # Create your models here.
 
@@ -23,7 +24,7 @@ class TableSize(models.Model):
         unique_together = ('capacity', 'size')
         
     def calculate_price(self, base_price):
-        return (base_price * self.price_factor) + self.additional_charges
+        return base_price
 
 
 # -------------------------------
@@ -90,8 +91,6 @@ class Table(models.Model):
     name = models.CharField(max_length=50)
     table_size = models.ForeignKey(TableSize, on_delete=models.PROTECT, related_name='tables')
     seating_type = models.ForeignKey(SeatingType, on_delete=models.SET_NULL, null=True, blank=True, default=None)
-    is_available = models.BooleanField(default=True)
-    is_combinable = models.BooleanField(default=True)  # Allows dynamic merging
     base_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)  # Base price per table
 
     class Meta:
@@ -106,8 +105,6 @@ class Table(models.Model):
         return self.table_size.size if self.table_size else None
 
     def calculate_price(self):
-        if self.table_size:
-            return self.table_size.calculate_price(self.base_price)
         return self.base_price
 
     def __str__(self):
@@ -211,7 +208,7 @@ class ReviewSummary(models.Model):
 class Review(models.Model):
     restaurant = models.ForeignKey(Restaurant, on_delete=models.CASCADE, related_name='reviews')
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    rating = models.PositiveIntegerField()
+    rating = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
     comment = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     on_display = models.BooleanField(default=False)

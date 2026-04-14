@@ -16,7 +16,7 @@ from UsersHandling.services import (
     get_current_restaurant_staff,
 )
 from .forms import TableForm, RestaurantForm, SpecialDayForm, ReviewForm
-from .models import Restaurant, Table, SpecialDay, Review, SeatingType
+from .models import Restaurant, Table, SpecialDay, Review, SeatingType, TableSize
 import json
 from django.contrib.auth.decorators import login_required
 from UsersHandling.models import RestaurantStaff
@@ -195,7 +195,13 @@ def tables(request):
     restaurant = get_object_or_404(Restaurant, id=restaurant_id)
     if request.method == "GET":
         form = TableForm(restaurant=restaurant)
-        return render(request, "Restaurants/tables.html", {"form": form})
+        seating_types = SeatingType.objects.all()
+        table_sizes = TableSize.objects.all()
+        return render(request, "Restaurants/tables.html", {
+            "form": form,
+            "seating_types": seating_types,
+            "table_sizes": table_sizes
+        })
     elif request.method == "POST":
         form, success = add_table(request, restaurant_id)
         if success:

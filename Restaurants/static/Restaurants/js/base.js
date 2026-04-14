@@ -266,7 +266,28 @@ document.addEventListener('DOMContentLoaded', () => {
         // Handle Card click
         const card = e.target.closest('.clickable-card');
         if (card) {
+            // Unselect all other cards first (if single select is preferred, or update global state)
+            // For now, we support multiple visual selection but single item focus for actions
+            const wasSelected = card.classList.contains('selected');
+            
+            // Clear other selections if we want to ensure only one item is "active" for the drawer
+            // document.querySelectorAll('.clickable-card.selected').forEach(c => c.classList.remove('selected'));
+            
             card.classList.toggle('selected');
+            
+            // Populate global state
+            if (card.classList.contains('selected')) {
+                window.selectedId = card.dataset.id;
+                window.selectedData = {...card.dataset};
+                console.log("Selected:", window.selectedId, window.selectedData);
+            } else {
+                // If we unselected the card that was globally active
+                if (window.selectedId === card.dataset.id) {
+                    window.selectedId = null;
+                    window.selectedData = {};
+                }
+            }
+            
             syncSelectionUI();
         }
     });
