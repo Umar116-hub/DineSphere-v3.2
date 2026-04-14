@@ -33,11 +33,11 @@ def check_special_day(restaurant, date):
 def get_available_tables(restaurant, date, start_time, end_time):
     """
     Returns available tables excluding:
-    - already booked tables
-    - locked tables
-
-    Lock logic:
-        Any table locked within last 5 minutes is unavailable
+    - Tables with confirmed/finished bookings in the time range
+    - Tables with paid pending bookings in the time range
+    - Tables with unpaid pending bookings that are still within the 5-minute lock window
+    
+    Unpaid pending bookings older than 5 minutes are treated as abandoned.
     """
     now = timezone.now()
 
@@ -45,21 +45,26 @@ def get_available_tables(restaurant, date, start_time, end_time):
     start_dt = timezone.make_aware(datetime.combine(date, start_time))
     end_dt = timezone.make_aware(datetime.combine(date, end_time))
 
-    booked_tables = Booking.objects.filter(
+    # Confirmed/finished bookings always block
+    confirmed_tables = Booking.objects.filter(
         restaurant=restaurant,
         booking_start_datetime__lt=end_dt,
         booking_end_datetime__gt=start_dt,
-        status=Booking.STATUS_CONFIRMED
+        status__in=[Booking.STATUS_CONFIRMED, Booking.STATUS_FINISHED]
     ).values_list('tables__id', flat=True)
 
-    locked_tables = Booking.objects.filter(
+    # Paid pending bookings block (customer paid but not yet approved by owner)
+    paid_pending_tables = Booking.objects.filter(
+        restaurant=restaurant,
+        booking_start_datetime__lt=end_dt,
+        booking_end_datetime__gt=start_dt,
         status=Booking.STATUS_PENDING,
-        locked_at__gte=now - timedelta(minutes=LOCK_DURATION_MINUTES)
+        payment_status=Booking.PAYMENT_STATUS_PAID
     ).values_list('tables__id', flat=True)
 
     return Table.objects.filter(
         restaurant=restaurant
-    ).exclude(id__in=booked_tables).exclude(id__in=locked_tables)
+    ).exclude(id__in=confirmed_tables).exclude(id__in=paid_pending_tables)
 
 
 @transaction.atomic

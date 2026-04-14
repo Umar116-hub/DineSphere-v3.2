@@ -359,7 +359,13 @@ def reservations(request):
     auto_approve_bookings(restaurant_id)
     
     # 2. Basic Query
-    reservations_query = Booking.objects.filter(restaurant=restaurant)
+    # Exclude unpaid abandoned checkouts so they don't show on the dashboard
+    reservations_query = Booking.objects.filter(
+        restaurant=restaurant
+    ).exclude(
+        status=Booking.STATUS_PENDING,
+        payment_status=Booking.PAYMENT_STATUS_PENDING
+    )
     
     # 3. Filtering
     status_filter = request.GET.get('status') # 'finished' (Approved) or 'pending'

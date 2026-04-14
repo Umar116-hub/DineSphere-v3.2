@@ -75,8 +75,10 @@ class Booking(models.Model):
         self.save()
 
     def approve(self):
-        """Marks the booking as approved (maps to existing finished status)."""
+        """Marks the booking as approved. Only paid bookings can be approved."""
         if self.status == self.STATUS_PENDING:
+            if self.payment_status != self.PAYMENT_STATUS_PAID:
+                raise Exception("Cannot approve an unpaid booking. Customer has not completed payment.")
             self.status = self.STATUS_FINISHED
             self.save()
             return True

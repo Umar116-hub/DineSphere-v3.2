@@ -194,11 +194,16 @@ def getAnalytics(restaurant_id):
     from django.utils import timezone
     from datetime import timedelta
     
-    # Get bookings that count towards revenue: Pending, Confirmed, and Approved (Finished)
-    # Deduct Cancelled implicitly by not including them.
-    revenue_bookings = Booking.objects.filter(
+    # Get bookings that count towards operations: exclude unpaid/abandoned checkouts
+    valid_bookings = Booking.objects.filter(
         restaurant_id=restaurant_id
-    ).exclude(status=Booking.STATUS_CANCELLED)
+    ).exclude(
+        status=Booking.STATUS_PENDING,
+        payment_status=Booking.PAYMENT_STATUS_PENDING
+    )
+    
+    # Deduct Cancelled implicitly by not including them for revenue.
+    revenue_bookings = valid_bookings.exclude(status=Booking.STATUS_CANCELLED)
     
     # Real booking statistics (all non-cancelled)
     total_bookings = revenue_bookings.count()
@@ -244,7 +249,7 @@ def getAnalytics(restaurant_id):
     ).count()
     
     # Order status breakdown
-    order_stats = Booking.objects.filter(restaurant_id=restaurant_id).aggregate(
+    order_stats = valid_bookings.aggregate(
         pending_count=Count('id', filter=Q(status=Booking.STATUS_PENDING)),
         confirmed_count=Count('id', filter=Q(status=Booking.STATUS_CONFIRMED)),
         approved_count=Count('id', filter=Q(status=Booking.STATUS_FINISHED)),

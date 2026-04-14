@@ -226,19 +226,30 @@ def get_unavailable_tables(request):
     start_datetime = timezone.make_aware(naive_start, timezone.get_current_timezone())
     end_datetime = start_datetime + timedelta(hours=duration_hours)
 
-    # Get overlapping bookings
-    bookings = Booking.objects.filter(
+    # Get overlapping bookings that actually block tables:
+    # 1. Confirmed/finished bookings always block
+    # 2. Paid pending bookings block
+    # Unpaid checkouts do NOT block tables.
+    confirmed_bookings = Booking.objects.filter(
         restaurant=restaurant,
-        status__in=[Booking.STATUS_PENDING, Booking.STATUS_CONFIRMED]
-    ).filter(
+        status__in=[Booking.STATUS_CONFIRMED, Booking.STATUS_FINISHED],
+        booking_start_datetime__lt=end_datetime,
+        booking_end_datetime__gt=start_datetime
+    ).prefetch_related('tables')
+
+    paid_pending_bookings = Booking.objects.filter(
+        restaurant=restaurant,
+        status=Booking.STATUS_PENDING,
+        payment_status=Booking.PAYMENT_STATUS_PAID,
         booking_start_datetime__lt=end_datetime,
         booking_end_datetime__gt=start_datetime
     ).prefetch_related('tables')
 
     booked_table_ids = set()
-    for booking in bookings:
-        for table in booking.tables.all():
-            booked_table_ids.add(table.id)
+    for qs in [confirmed_bookings, paid_pending_bookings]:
+        for booking in qs:
+            for table in booking.tables.all():
+                booked_table_ids.add(table.id)
 
     return JsonResponse({
         "booked_tables": list(booked_table_ids)

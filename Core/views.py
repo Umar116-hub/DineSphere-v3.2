@@ -62,7 +62,12 @@ def profile(request):
         return redirect("../uh/auth")
 
     user_profile = CustomerProfile.objects.filter(user=request.user).first()
-    bookings = Booking.objects.filter(customer=request.user).order_by('-created_at')
+    bookings = Booking.objects.filter(
+        customer=request.user
+    ).exclude(
+        payment_status=Booking.PAYMENT_STATUS_PENDING
+    ).order_by('-created_at')
+    
     # Reviews
     from Restaurants.models import Review
     user_reviews = Review.objects.filter(user=request.user).order_by('-created_at')

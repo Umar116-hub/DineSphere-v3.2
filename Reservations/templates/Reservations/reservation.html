@@ -653,7 +653,7 @@
             <span>Total Amount</span>
             <span id="sum-total">$0.00</span>
         </div>
-        <p style="font-size: 0.8rem; color: #888; margin-bottom: 20px;">* Includes 5-minute table lock guarantee</p>
+
         
         {% if request.user.role == 'OWNER' or request.user.role == 'STAFF' %}
             <div style="background: #fee2e2; color: #b91c1c; padding: 15px; border-radius: 10px; text-align: center; font-weight: 600;">
@@ -664,7 +664,7 @@
                 style="width: 100%; background: #111827; color: white; padding: 18px; border-radius: 10px; font-weight: bold; border: none; cursor: pointer;"
                 onclick="handleReserveClick()"
                 >
-                RESERVE AND LOCK
+                RESERVE
             </button>
         {% endif %}
     </div>
@@ -717,8 +717,8 @@
                 <p>Login to confirm your booking</p>
             </div>
             <div class="auth-toggle-buttons">
-                <button id="login-btn-modal" class="toggle-btn active" onclick="switchAuthMode('login')">LOGIN</button>
-                <button id="signup-btn-modal" class="toggle-btn" onclick="switchAuthMode('signup')">SIGNUP</button>
+                <button id="login-btn-modal" class="toggle-btn active">LOGIN</button>
+                <button id="signup-btn-modal" class="toggle-btn" onclick="redirectToSignup()">SIGNUP</button>
             </div>
             <div class="form-card">
                 <!-- Login Form -->
@@ -735,47 +735,6 @@
                     <button type="submit" class="submit-btn" onclick="saveBookingState()">LOGIN & CONTINUE</button>
                 </form>
                 
-                <!-- Signup Form -->
-                <form id="signup-form-modal" class="auth-form" method="post" action="/uh/signup/?next={{ request.get_full_path }}" enctype="multipart/form-data" style="display: none;">
-                    {% csrf_token %}
-                    <div class="input-group">
-                        <i class="fas fa-envelope"></i>
-                        <input type="email" name="email" placeholder="Email Address" required>
-                    </div>
-                    <div class="input-group">
-                        <i class="fas fa-user-plus"></i>
-                        <input type="text" name="username" placeholder="Desired Username" required>
-                    </div>
-                    <div class="input-row">
-                        <div class="input-group">
-                            <i class="fas fa-venus-mars"></i>
-                            <select name="gender" required>
-                                <option value="" disabled selected>Gender</option>
-                                <option value="male">Male</option>
-                                <option value="female">Female</option>
-                                <option value="other">Other</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <i class="fas fa-calendar-alt"></i>
-                            <input type="date" name="dob" required>
-                        </div>
-                    </div>
-                    <div class="input-group">
-                        <i class="fas fa-lock"></i>
-                        <input type="password" name="password" placeholder="Create Password" required>
-                    </div>
-
-                    <!-- Real-time Password Checklist for Modal -->
-                    <div id="modal-signup-requirements" style="text-align: left; margin: -1rem 0 1.5rem 2.8rem; font-size: 0.8rem; color: rgba(255, 255, 255, 0.4);">
-                        <div class="requirement" data-criterion="length"><i class="fas fa-circle"></i> At least 8 characters</div>
-                        <div class="requirement" data-criterion="upper"><i class="fas fa-circle"></i> One uppercase letter</div>
-                        <div class="requirement" data-criterion="lower"><i class="fas fa-circle"></i> One lowercase letter</div>
-                        <div class="requirement" data-criterion="number"><i class="fas fa-circle"></i> One number</div>
-                    </div>
-
-                    <button type="submit" class="submit-btn">SIGNUP & CONTINUE</button>
-                </form>
             </div>
             <div style="margin-top: 15px;">
                 <button type="button" onclick="closeAuthModal()" style="background:transparent; border:none; color:rgba(255,255,255,0.6); cursor:pointer; text-decoration:underline;">
@@ -867,23 +826,10 @@
         document.body.classList.remove('modal-active');
     }
 
-    function switchAuthMode(mode) {
-        const loginBtn = document.getElementById('login-btn-modal');
-        const signupBtn = document.getElementById('signup-btn-modal');
-        const loginForm = document.getElementById('login-form-modal');
-        const signupForm = document.getElementById('signup-form-modal');
-        
-        if (mode === 'login') {
-            loginForm.style.display = 'block';
-            signupForm.style.display = 'none';
-            loginBtn.classList.add('active');
-            signupBtn.classList.remove('active');
-        } else {
-            loginForm.style.display = 'none';
-            signupForm.style.display = 'block';
-            signupBtn.classList.add('active');
-            loginBtn.classList.remove('active');
-        }
+    function redirectToSignup() {
+        saveBookingState();
+        const nextUrl = window.location.pathname;
+        window.location.href = `${window.location.origin}/uh/auth/?mode=signup&next=${encodeURIComponent(nextUrl)}`;
     }
 
     // Persistence Logic
@@ -1091,7 +1037,7 @@
     });
 
     function submitReservation() {
-        if (!IS_AUTHENTICATED) {
+        if (!isAuthenticated) {
             // Save current selection to localStorage
             const state = {
                 date: document.getElementById('form-date').value,
