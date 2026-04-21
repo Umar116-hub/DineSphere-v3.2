@@ -18,7 +18,6 @@ def restrict_access(view_func):
             restricted_views = [
                 'analytics',
                 'staff_management',
-                'tables',
                 'holidays',
                 'business_info',
                 'restaurant_registration'

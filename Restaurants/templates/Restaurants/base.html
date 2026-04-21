@@ -127,10 +127,13 @@
                     <i class="fas fa-calendar-check"></i>
                 </a>
 
-                {% if request.user|is_owner %}
+                {% if request.user|is_owner or request.user|is_staff %}
                 <a href="/business/tables" class="nav-item {% if request.path == '/business/tables' %}active{% endif %}" title="Table Management">
                     <i class="fas fa-table"></i>
                 </a>
+                {% endif %}
+
+                {% if request.user|is_owner %}
                 <a href="/business/holidays" class="nav-item {% if request.path == '/business/holidays' %}active{% endif %}" title="Holidays">
                     <i class="fas fa-gift"></i>
                 </a>
