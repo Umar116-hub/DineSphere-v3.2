@@ -1,3 +1,29 @@
+/**
+ * Converts "6:01 p.m." or "18:01" to "18:01" (24-hour format)
+ */
+function formatTimeTo24h(timeStr) {
+    if (!timeStr) return "";
+    
+    // If it's already in 24h format (e.g. "18:01"), just return it
+    if (/^\d{1,2}:\d{2}/.test(timeStr)) return timeStr.substring(0, 5);
+
+    // Handle "8 p.m." or "6:01 p.m."
+    const parts = timeStr.toLowerCase().split(' ');
+    if (parts.length < 2) return timeStr; // fallback
+
+    const timePart = parts[0];
+    const modifier = parts[1].replace(/\./g, ''); // "pm" or "am"
+
+    let [hours, minutes] = timePart.split(':');
+    if (!minutes) minutes = "00";
+
+    let h = parseInt(hours, 10);
+    if (modifier === 'pm' && h < 12) h += 12;
+    if (modifier === 'am' && h === 12) h = 0;
+
+    return `${h.toString().padStart(2, '0')}:${minutes.padStart(2, '0')}`;
+}
+
 // 1. Create the Registry of Page-Specific Mappers
 const PageMappers = {
     // Logic for Table Page
@@ -20,7 +46,7 @@ const PageMappers = {
         
         form.querySelector('[name="date"]').value = data.date;
         form.querySelector('[name="name"]').value = data.name;
-        form.querySelector('[name="closed_full_day"]').checked = data.closed_full_day === "True";
+        form.querySelector('[name="closed_full_day"]').checked = data.closed_full_day.toLowerCase() === "true";
         form.querySelector('[name="adjusted_opening_hour"]').value = data.adjusted_opening_hour ?? 'None';
         form.querySelector('[name="adjusted_closing_hour"]').value = data.adjusted_closing_hour ?? 'None';
 
@@ -44,7 +70,14 @@ const PageMappers = {
 
     fields.forEach(field => {
         const input = form.querySelector(`[name="${field}"]`);
-        if (input && data[field] !== undefined) input.value = data[field];
+        if (input && data[field] !== undefined) {
+            // Clean up "None" values from dataset
+            if (data[field] === "None" || data[field] === "null" || !data[field]) {
+                input.value = "";
+            } else {
+                input.value = data[field];
+            }
+        }
     });
 
     // 3️⃣ Boolean / checkbox fields
@@ -67,16 +100,16 @@ const PageMappers = {
         'cool_down'
     ];
     numericFields.forEach(field => {
-    const input = form.querySelector(`[name="${field}"]`);
-    if (input && data[field] !== undefined) {
-        // If it's a time input, format it so the browser can display it
-        if (input.type === 'time') {
-            input.value = formatTimeTo24h(data[field]);
-        } else {
-            input.value = data[field];
+        const input = form.querySelector(`[name="${field}"]`);
+        if (input && data[field] !== undefined) {
+            // Always try to format as 24h time if it's a known time field or has "hour" in the name
+            if (input.type === 'time' || field.includes('hour')) {
+                input.value = formatTimeTo24h(data[field]);
+            } else {
+                input.value = data[field];
+            }
         }
-    }
-});
+    });
 
     // 5️⃣ Array / multiple selections (e.g., seating types)
    // Handle seating types (checkbox group)
@@ -198,31 +231,7 @@ document.addEventListener('DOMContentLoaded', function() {
         confirmModal.classList.remove('show');
         modalOverlay.classList.remove('show');
     });
-/**
- * Converts "6:01 p.m." or "18:01" to "18:01" (24-hour format)
- */
-function formatTimeTo24h(timeStr) {
-    if (!timeStr) return null;
-    
-    // If it's already in 24h format (e.g. "18:01"), just return it
-    if (/^\d{2}:\d{2}/.test(timeStr)) return timeStr.substring(0, 5);
-
-    const [time, modifier] = timeStr.split(' ');
-    let [hours, minutes] = time.split(':');
-
-    if (hours === '12') hours = '00';
-    
-    // Clean up minutes (remove dots from p.m. / a.m.)
-    const cleanModifier = modifier.toLowerCase().replace(/\./g, '');
-
-    if (cleanModifier === 'pm') {
-        hours = parseInt(hours, 10) + 12;
-    }
-
-    return `${hours.toString().padStart(2, '0')}:${minutes.padStart(2, '0')}`;
-}
-
-// --- Inside your form submit listener ---
+    // --- Inside your form submit listener ---
 form.addEventListener('submit', async (e) => {
     // PREVENT DOUBLE CLICKS: Disable submit button globally
     const submitBtn = form.querySelector('button[type="submit"]');

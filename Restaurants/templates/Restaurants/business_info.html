@@ -88,8 +88,8 @@
             data-address="{{ restaurant.address }}"
             data-phone_number="{{ restaurant.phone_number }}"
             data-about_restaurant="{{ restaurant.about_restaurant }}"
-            data-fb_link="{{ restaurant.fb_link }}"
-            data-website_link = "{{ restaurant.website_link }}"
+            data-fb_link="{{ restaurant.fb_link|default:'' }}"
+            data-website_link = "{{ restaurant.website_link|default:'' }}"
             data-seating_types = "{% for seating in restaurant.seating_types.all %}
             {{ seating.id }},
             {% endfor %}"

@@ -32,20 +32,50 @@ from .decorators import restrict_access
 @login_required
 def registration(request):
     if request.method == "POST":
+        # Extract fields for repopulation
+        res_name = request.POST.get("res_name", "").strip()
+        res_title = request.POST.get("res_title", "").strip()
+        res_about = request.POST.get("res_about", "")
+        city = request.POST.get("city", "").strip()
+        address = request.POST.get("address", "").strip()
+        phone = request.POST.get("phone", "").strip()
+        open_hour = request.POST.get("open_hour", "18:00")
+        close_hour = request.POST.get("close_hour", "01:00")
+        cooldown = request.POST.get("cooldown", "30")
+        slot_duration = request.POST.get("slot_duration", "60")
+        advance_days = request.POST.get("advance_days", "60")
+        fb_link = request.POST.get("fb_link", "")
+        web_link = request.POST.get("web_link", "")
+
         try:
+            # Parse times safely
+            try:
+                opening_time = datetime.strptime(open_hour, "%H:%M").time()
+                closing_time = datetime.strptime(close_hour, "%H:%M").time()
+            except ValueError:
+                raise ValueError("Invalid time format. Please use HH:MM.")
+
             data = {
-                "name": request.POST.get("res_name"),
-                "title": request.POST.get("res_title"),
+                "name": res_name,
+                "title": res_title or res_name,
                 "image": request.FILES.get("res_image"),
-                "about": request.POST.get("res_about"),
-                "city": request.POST.get("city"),
-                "opening_hour": datetime.strptime(
-                    request.POST.get("open_hour"), "%H:%M"
-                ).time(),
-                "closing_hour": datetime.strptime(
-                    request.POST.get("close_hour"), "%H:%M"
-                ).time(),
+                "about": res_about,
+                "city": city,
+                "address": address,
+                "phone": phone,
+                "opening_hour": opening_time,
+                "closing_hour": closing_time,
+                "cooldown": int(cooldown or 30),
+                "slot_duration": int(slot_duration or 60),
+                "advance_days": int(advance_days or 60),
+                "fb_link": fb_link,
+                "web_link": web_link,
             }
+
+            if not data["name"]:
+                raise ValueError("Restaurant name is required.")
+            if not data["city"]:
+                raise ValueError("City is required.")
 
             restaurant = create_restaurant_for_user(request.user, data)
 
@@ -64,14 +94,31 @@ def registration(request):
 
         except Exception as e:
             messages.error(request, f"Registration failed: {str(e)}")
-            return redirect("restaurant_registration")
+            # Fall through to render with context
+            
+    # GET or POST-error
     seating_types = SeatingType.objects.all()
-    if request.user.is_authenticated:
-        return render(
-        request, "Restaurants/registration.html", {"seatingtype": seating_types}
-    )
-    else:
-        return redirect("/uh/auth/")
+    context = {
+        "seatingtype": seating_types,
+        # Pass back all form data for repopulation
+        "res_name": request.POST.get("res_name", ""),
+        "res_title": request.POST.get("res_title", ""),
+        "res_about": request.POST.get("res_about", ""),
+        "city": request.POST.get("city", ""),
+        "address": request.POST.get("address", ""),
+        "phone": request.POST.get("phone", ""),
+        "open_hour": request.POST.get("open_hour", "18:00"),
+        "close_hour": request.POST.get("close_hour", "01:00"),
+        "cooldown": request.POST.get("cooldown", "30"),
+        "slot_duration": request.POST.get("slot_duration", "60"),
+        "advance_days": request.POST.get("advance_days", "60"),
+        "fb_link": request.POST.get("fb_link", ""),
+        "web_link": request.POST.get("web_link", ""),
+    }
+    
+    return render(request, "Restaurants/registration.html", context)
+
+
 
 
 @restrict_access
@@ -80,8 +127,9 @@ def staff_management(request):
     restaurant_id = request.session.get("selected_restaurant_id")
 
     if isStaff(request.user):
-        staff = RestaurantStaff.objects.get(user=request.user)
-        restaurant_id = staff.restaurant.id
+        staff = RestaurantStaff.objects.filter(user=request.user).first()
+        if staff:
+            restaurant_id = staff.restaurant.id
 
     if not restaurant_id:
 
@@ -116,14 +164,19 @@ def analytics(request, tab=None):
     if request.method == "POST":
     # 1. Identify which form we are processing from the hidden input
         active_tab = request.POST.get('active_tab_name')
+        restaurant_id = request.session.get("selected_restaurant_id")
+        restaurant = get_object_or_404(Restaurant, id=restaurant_id) if restaurant_id else None
         
         if active_tab:
             # 2. Bind the POST data to the specific form class
-            form = getForm(active_tab, data=request.POST)
+            form = getForm(active_tab, data=request.POST, restaurant=restaurant)
             
             # 3. Validate and Save
             if form and form.is_valid():
-                form.save()
+                obj = form.save(commit=False)
+                if restaurant and hasattr(obj, 'restaurant') and obj.restaurant is None:
+                    obj.restaurant = restaurant
+                obj.save()
             # Success! Redirect to clear the POST data and the dynamic tab
         return redirect("analytics")
             
@@ -178,7 +231,7 @@ def analytics(request, tab=None):
 
     if tab:
         try:
-            context["form"] = getForm(tab)
+            context["form"] = getForm(tab, restaurant=get_object_or_404(Restaurant, id=restaurant_id) if restaurant_id else None)
             context["active_dynamic_tab"] = tab
         except ValueError:
             pass
@@ -195,8 +248,9 @@ def tables(request):
     restaurant = get_object_or_404(Restaurant, id=restaurant_id)
     if request.method == "GET":
         form = TableForm(restaurant=restaurant)
-        seating_types = SeatingType.objects.all()
-        table_sizes = TableSize.objects.all()
+        from django.db.models import Q
+        seating_types = SeatingType.objects.filter(Q(restaurant__isnull=True) | Q(restaurant=restaurant))
+        table_sizes = TableSize.objects.filter(Q(restaurant__isnull=True) | Q(restaurant=restaurant))
         return render(request, "Restaurants/tables.html", {
             "form": form,
             "seating_types": seating_types,
@@ -205,12 +259,21 @@ def tables(request):
     elif request.method == "POST":
         form, success = add_table(request, restaurant_id)
         if success:
+            log_event(
+                request.user.username,
+                {
+                    "action": "added_table",
+                    "details": f"Added table to restaurant ID {restaurant_id}",
+                }
+            )
             messages.success(request, "Table added successfully!")
             return redirect("/business/tables/")
         else:
             messages.error(request, "Failed to add table. Please check the form for errors.")
-            # We return render instead of redirect to keep the form object (and its errors) alive
-            return render(request, "Restaurants/tables.html", {"form": form})
+            from django.db.models import Q
+            seating_types = SeatingType.objects.filter(Q(restaurant__isnull=True) | Q(restaurant=restaurant))
+            table_sizes = TableSize.objects.filter(Q(restaurant__isnull=True) | Q(restaurant=restaurant))
+            return render(request, "Restaurants/tables.html", {"form": form, "seating_types": seating_types, "table_sizes": table_sizes})
 
 
 @restrict_access
@@ -218,47 +281,80 @@ def holidays(request):
     restaurant_id = request.session.get("selected_restaurant_id")
     if not restaurant_id:
         return redirect("/business/registration/")
-    restaurant = get_object_or_404(Restaurant, id=restaurant_id)
+    restaurant = get_object_or_404(Restaurant, id=id) if 'id' in locals() else get_object_or_404(Restaurant, id=restaurant_id)
+
+    from .forms import SpecialDayForm, WeeklyScheduleForm
+    from .models import SpecialDay, WeeklySchedule
 
     if request.method == "GET":
-        form = SpecialDayForm()
+        holiday_form = SpecialDayForm()
+        weekly_form = WeeklyScheduleForm()
+        
         special_days = SpecialDay.objects.filter(restaurant=restaurant)
+        
+        # Prepare data for the 7 days
+        day_names = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+        db_schedules = {s.day_of_week: s for s in WeeklySchedule.objects.filter(restaurant=restaurant)}
+        
+        weekly_data = []
+        for i, name in enumerate(day_names):
+            weekly_data.append({
+                'day_idx': i,
+                'day_name': name,
+                'schedule': db_schedules.get(i)
+            })
 
         return render(
             request,
             "Restaurants/holidays.html",
-            {"form": form, "special_days": special_days},
+            {
+                "form": holiday_form, 
+                "weekly_form": weekly_form,
+                "special_days": special_days,
+                "weekly_data": weekly_data,
+                "restaurant": restaurant,
+            },
         )
 
     elif request.method == "POST":
-        form = SpecialDayForm(request.POST)
-
-        if form.is_valid():
-            obj = form.save(commit=False)
-            obj.restaurant = restaurant  # REQUIRED
-            obj.save()
-            log_event(
-                request.user.username,
-                {
-                    "action": "added_holiday",
-                    "details": f"Added holiday {obj.name} (ID: {obj.id}) to restaurant ID {restaurant_id}",
-                },
-            )
-            messages.success(request, "Holiday added successfully!")
-            return redirect("/business/holidays/")
+        action = request.POST.get('action')
+        
+        if action == 'add_weekly':
+            form = WeeklyScheduleForm(request.POST)
+            if form.is_valid():
+                day_of_week = form.cleaned_data['day_of_week']
+                # Update or create
+                WeeklySchedule.objects.update_or_create(
+                    restaurant=restaurant,
+                    day_of_week=day_of_week,
+                    defaults={
+                        'is_closed': form.cleaned_data['is_closed'],
+                        'opening_hour': form.cleaned_data.get('opening_hour'),
+                        'closing_hour': form.cleaned_data.get('closing_hour'),
+                    }
+                )
+                day_name = dict(WeeklySchedule.DAYS_OF_WEEK).get(int(day_of_week), "Selected Day")
+                messages.success(request, f"Weekly schedule updated for {day_name}s.")
+            else:
+                messages.error(request, "Failed to update weekly schedule.")
+                
         else:
-            messages.error(request, "Failed to add holiday.")
-            special_days = SpecialDay.objects.filter(restaurant=restaurant)
-            return render(
-                request,
-                "Restaurants/holidays.html",
-                {"form": form, "special_days": special_days},
-            )
+            # Default to original holiday logic
+            form = SpecialDayForm(request.POST)
+            if form.is_valid():
+                instance = form.save(commit=False)
+                instance.restaurant = restaurant
+                instance.save()
+                messages.success(request, "Special holiday added successfully.")
+            else:
+                messages.error(request, "Failed to add holiday.")
+
+        return redirect("/business/holidays/")
 
 @restrict_access
 def reviews(request):
-    restaurant_id = request.session["selected_restaurant_id"]
-    restaurant = Restaurant.objects.get(id=restaurant_id)
+    restaurant_id = request.session.get("selected_restaurant_id")
+    restaurant = Restaurant.objects.filter(id=restaurant_id).first()
 
     if request.method == "GET":
         form = ReviewForm()
@@ -278,6 +374,13 @@ def reviews(request):
             obj.save()
 
             messages.success(request, "Review added successfully!")
+            log_event(
+                request.user.username,
+                {
+                    "action": "added_review",
+                    "details": f"Added review to restaurant {reviews.comment} by {reviews.user})",
+                },
+            )   
             return redirect("/business/reviews/")
         else:
             messages.error(request, "Failed to add review. Please check the form.")
@@ -471,17 +574,41 @@ def unhide(request):
 @restrict_access
 def updateBusiness(request, id):
     if request.method == "POST":
-        instance = get_object_or_404(Restaurant, id=id)
-        data = json.loads(request.body)
-        perform_dynamic_update(instance, data)
-        log_event(
-            request.user.username,
-            {
-                "action": "updated_business",
-                "details": f"Updated business {instance.name} (ID: {instance.id})",
-            },
-        )
-        return JsonResponse({"status": "success", "message": "Business updated"})
+        try:
+            instance = get_object_or_404(Restaurant, id=id)
+            
+            # Determine content type
+            content_type = request.content_type or ''
+            
+            if 'application/json' in content_type:
+                data = json.loads(request.body)
+            else:
+                # Handle FormData (multipart/form-data)
+                data = {}
+                for key in request.POST:
+                    if key == 'csrfmiddlewaretoken':
+                        continue
+                    values = request.POST.getlist(key)
+                    data[key] = values if len(values) > 1 else values[0]
+                
+                # Directly handle files
+                if request.FILES:
+                    for key, file in request.FILES.items():
+                        setattr(instance, key, file)
+            
+            # Update other fields
+            perform_dynamic_update(instance, data)
+            
+            log_event(
+                request.user.username,
+                {
+                    "action": "updated_business",
+                    "details": f"Updated business {instance.name} (ID: {instance.id})",
+                },
+            )
+            return JsonResponse({"status": "success", "message": "Business updated"})
+        except Exception as e:
+            return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
 @restrict_access
 def updateTables(request, id):
@@ -541,16 +668,104 @@ def deleteHolidays(request, id):
 
 
 @restrict_access
+def deleteSeatingType(request, id):
+    if request.method == "POST":
+        instance = get_object_or_404(SeatingType, id=id)
+        # Protect global defaults — only custom (restaurant-specific) types can be deleted
+        if instance.restaurant is None:
+            return JsonResponse({"status": "error", "message": "Cannot delete a global default seating type."}, status=403)
+        instance.delete()
+        return JsonResponse({"status": "success"})
+    return JsonResponse({"status": "error", "message": "Invalid request method."}, status=405)
+
+
+@restrict_access
+def deleteTableSize(request, id):
+    if request.method == "POST":
+        instance = get_object_or_404(TableSize, id=id)
+        # Protect global defaults — only custom (restaurant-specific) sizes can be deleted
+        if instance.restaurant is None:
+            return JsonResponse({"status": "error", "message": "Cannot delete a global default table size."}, status=403)
+        instance.delete()
+        return JsonResponse({"status": "success"})
+    return JsonResponse({"status": "error", "message": "Invalid request method."}, status=405)
+
+
+@restrict_access
 def download_logs(request):
     if not request.user.is_authenticated:
         return HttpResponse("Unauthorized", status=401)
 
     username = request.user.username
-
     logs = get_user_logs(username)
+
+    # User Request: Add test entries if none exist
+    if not logs:
+        log_event(
+            username, 
+            {
+                "action": "system_check",
+                "details": "MongoDB logging flow verified. This entry created automatically for testing.",
+                "status": "connected"
+            }
+        )
+        logs = get_user_logs(username)
+
     formatted_text = format_logs_to_text(logs)
-
     response = HttpResponse(formatted_text, content_type='text/plain')
-    response['Content-Disposition'] = f'attachment; filename="{username}_logs.txt"'
-
+    response['Content-Disposition'] = f'attachment; filename="{username}_activity_logs.txt"'
     return response
+
+
+def get_operational_hours(request):
+    """
+    AJAX endpoint to get restaurant hours for a specific date.
+    Accounts for SpecialDay and WeeklySchedule.
+    """
+    from Reservations.services import check_special_day
+    from django.utils.dateparse import parse_date
+    from .models import Restaurant
+    from django.http import JsonResponse
+    from django.shortcuts import get_object_or_404
+    
+    restaurant_id = request.GET.get('restaurant_id')
+    date_str = request.GET.get('date')
+    
+    if not restaurant_id or not date_str:
+        return JsonResponse({'error': 'Missing parameters'}, status=400)
+        
+    restaurant = get_object_or_404(Restaurant, id=restaurant_id)
+    date = parse_date(date_str)
+    
+    try:
+        schedule = check_special_day(restaurant, date)
+        
+        # Determine hours
+        opening = restaurant.opening_hour
+        closing = restaurant.closing_hour
+        
+        if schedule:
+            if hasattr(schedule, 'adjusted_opening_hour'): # It's a SpecialDay
+                if schedule.adjusted_opening_hour:
+                    opening = schedule.adjusted_opening_hour
+                if schedule.adjusted_closing_hour:
+                    closing = schedule.adjusted_closing_hour
+            else: # It's a WeeklySchedule
+                if schedule.opening_hour:
+                    opening = schedule.opening_hour
+                if schedule.closing_hour:
+                    closing = schedule.closing_hour
+                
+        return JsonResponse({
+            'status': 'open',
+            'opening': opening.strftime('%H:%M'),
+            'closing': closing.strftime('%H:%M'),
+            'opening_display': opening.strftime('%I:%M %p'),
+            'closing_display': closing.strftime('%I:%M %p')
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'status': 'closed',
+            'message': str(e)
+        })
