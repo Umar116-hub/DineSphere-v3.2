@@ -49,6 +49,9 @@ class CustomerProfile(models.Model):
     total_spent = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total_reservations = models.IntegerField(default=0)
 
+    # def __str__(self):
+        # return f"Username: {self.user.mo}"
+
 
 class RestaurantStaff(models.Model):
     """This model represents the staff members of a restaurant. The role field specifies whether the staff member is an owner or regular staff, which can be used to manage permissions and access levels within the restaurant's management system.

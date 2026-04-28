@@ -14,10 +14,18 @@ def _get_client():
     """Lazily create and cache the MongoClient."""
     global _client
     if _client is None:
-        _client = MongoClient(
-            settings.MONGO_URI,
-            serverSelectionTimeoutMS=3000  # Fail fast if MongoDB is unreachable
-        )
+        try:
+            _client = MongoClient(
+                settings.MONGO_URI,
+                serverSelectionTimeoutMS=3000  # Fail fast if MongoDB is unreachable
+            )
+            # Optional: Test connection immediately
+            _client.admin.command('ping')
+        except Exception as e:
+            if settings.DEBUG:
+                print(f"MongoDB Connection Error: {e}")
+            _client = None
+            raise e
     return _client
 
 
@@ -25,7 +33,9 @@ def _get_db():
     """Lazily get and cache the MongoDB database."""
     global _db
     if _db is None:
-        _db = _get_client()[settings.MONGO_DB_NAME]
+        client = _get_client()
+        if client:
+            _db = client[settings.MONGO_DB_NAME]
     return _db
 
 
@@ -33,7 +43,13 @@ def _get_collection(name):
     """Get a MongoDB collection by name. Only works when USE_MONGO=True."""
     if not getattr(settings, 'USE_MONGO', False):
         return None
-    return _get_db()[name]
+    try:
+        db = _get_db()
+        return db[name] if db is not None else None
+    except Exception as e:
+        if settings.DEBUG:
+            print(f"MongoDB Collection Error ({name}): {e}")
+        return None
 
 
 # ─── Collection Accessors ─────────────────────────────────────────
@@ -125,26 +141,13 @@ def is_mongo_available():
     if not getattr(settings, 'USE_MONGO', False):
         return False
     try:
-        _get_client().admin.command('ping')
-        return True
+        client = _get_client()
+        if client:
+            client.admin.command('ping')
+            return True
+        return False
     except Exception:
         return False
-
-
-def log_event(user, data):
-    """Log event to MongoDB (duplicated here for backward compat)."""
-    if not getattr(settings, 'USE_MONGO', False):
-        return
-    try:
-        collection = get_logs_collection()
-        if collection is not None:
-            collection.insert_one({
-                "user": user,
-                "data": data,
-                "timestamp": datetime.now()
-            })
-    except Exception:
-        pass  # Fail silently for logging
 
 
 def get_collection_stats():

@@ -20,10 +20,10 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 
 # Import all models
-from UsersHandling.models import User, FavouriteRestaurant
+from UsersHandling.models import User, RestaurantStaff
 from Restaurants.models import (
     Restaurant, Table, TableSize, SeatingType, 
-    RestaurantStaff, Review, Holiday
+    Review, SpecialDay, FavouriteRestaurant
 )
 from Reservations.models import Booking
 
@@ -52,11 +52,14 @@ def migrate_users():
             'last_login': user.last_login,
             'image': user.image.name if user.image else None,
             'role': user.role if hasattr(user, 'role') else 'customer',
+            'date_of_birth': datetime.combine(user.date_of_birth, datetime.min.time()) if getattr(user, 'date_of_birth', None) else None,
+            'phone': getattr(user, 'phone', None),
+            'gender': getattr(user, 'gender', None),
         }
         users_collection.insert_one(doc)
         count += 1
     
-    print(f"  ✓ Migrated {count} users")
+    print(f"  [OK] Migrated {count} users")
     return count
 
 
@@ -71,23 +74,22 @@ def migrate_restaurants():
         doc = {
             '_id': restaurant.id,
             'name': restaurant.name,
+            'title': restaurant.title,
             'address': restaurant.address,
             'city': restaurant.city,
-            'cuisine_type': restaurant.cuisine_type,
-            'description': restaurant.description,
-            'phone': restaurant.phone,
-            'email': restaurant.email,
-            'website': restaurant.website,
-            'rating': float(restaurant.rating) if restaurant.rating else 0.0,
+            'phone_number': restaurant.phone_number,
+            'about_restaurant': restaurant.about_restaurant,
+            'fb_link': restaurant.fb_link,
+            'website_link': restaurant.website_link,
             'is_approved': restaurant.is_approved,
-            'owner_id': restaurant.owner_id,
-            'image': restaurant.image.name if restaurant.image else None,
-            'created_at': datetime.now(),
+            'has_top_offers': restaurant.has_top_offers,
+            'image': restaurant.image.name if getattr(restaurant, 'image', None) else None,
+            'created_at': restaurant.created_at,
         }
         restaurants_collection.insert_one(doc)
         count += 1
     
-    print(f"  ✓ Migrated {count} restaurants")
+    print(f"  [OK] Migrated {count} restaurants")
     return count
 
 
@@ -105,12 +107,12 @@ def migrate_tables():
             'restaurant_id': table.restaurant_id,
             'table_size_id': table.table_size_id,
             'seating_type_id': table.seating_type_id,
-            'is_active': table.is_active,
+            'base_price': float(table.base_price) if hasattr(table, 'base_price') and table.base_price else 0.0,
         }
         tables_collection.insert_one(doc)
         count += 1
     
-    print(f"  ✓ Migrated {count} tables")
+    print(f"  [OK] Migrated {count} tables")
     return count
 
 
@@ -124,14 +126,15 @@ def migrate_table_sizes():
     for size in TableSize.objects.all():
         doc = {
             '_id': size.id,
-            'name': size.name,
+            'name': size.size,
             'capacity': size.capacity,
-            'restaurant_id': size.restaurant_id,
+            'price_factor': float(size.price_factor) if hasattr(size, 'price_factor') and size.price_factor else 1.0,
+            'additional_charges': float(size.additional_charges) if hasattr(size, 'additional_charges') and size.additional_charges else 0.0,
         }
         table_sizes_collection.insert_one(doc)
         count += 1
     
-    print(f"  ✓ Migrated {count} table sizes")
+    print(f"  [OK] Migrated {count} table sizes")
     return count
 
 
@@ -146,12 +149,11 @@ def migrate_seating_types():
         doc = {
             '_id': seating.id,
             'name': seating.name,
-            'restaurant_id': seating.restaurant_id,
         }
         seating_types_collection.insert_one(doc)
         count += 1
     
-    print(f"  ✓ Migrated {count} seating types")
+    print(f"  [OK] Migrated {count} seating types")
     return count
 
 
@@ -168,12 +170,12 @@ def migrate_restaurant_staff():
             'user_id': staff.user_id,
             'restaurant_id': staff.restaurant_id,
             'role': staff.role,
-            'is_active': staff.is_active,
+            'is_premium': getattr(staff, 'is_premium', False),
         }
         staff_collection.insert_one(doc)
         count += 1
     
-    print(f"  ✓ Migrated {count} staff members")
+    print(f"  [OK] Migrated {count} staff members")
     return count
 
 
@@ -197,7 +199,7 @@ def migrate_reviews():
         reviews_collection.insert_one(doc)
         count += 1
     
-    print(f"  ✓ Migrated {count} reviews")
+    print(f"  [OK] Migrated {count} reviews")
     return count
 
 
@@ -208,18 +210,20 @@ def migrate_holidays():
     holidays_collection.delete_many({})
     
     count = 0
-    for holiday in Holiday.objects.all():
+    for holiday in SpecialDay.objects.all():
         doc = {
             '_id': holiday.id,
             'name': holiday.name,
-            'date': holiday.date,
+            'date': datetime.combine(holiday.date, datetime.min.time()) if holiday.date else None,
             'restaurant_id': holiday.restaurant_id,
-            'is_recurring': holiday.is_recurring,
+            'closed_full_day': holiday.closed_full_day,
+            'adjusted_opening_hour': holiday.adjusted_opening_hour,
+            'adjusted_closing_hour': holiday.adjusted_closing_hour,
         }
         holidays_collection.insert_one(doc)
         count += 1
     
-    print(f"  ✓ Migrated {count} holidays")
+    print(f"  [OK] Migrated {count} holidays")
     return count
 
 
@@ -246,7 +250,7 @@ def migrate_bookings():
         bookings_collection.insert_one(doc)
         count += 1
     
-    print(f"  ✓ Migrated {count} bookings")
+    print(f"  [OK] Migrated {count} bookings")
     return count
 
 
@@ -267,7 +271,7 @@ def migrate_favourites():
         favourites_collection.insert_one(doc)
         count += 1
     
-    print(f"  ✓ Migrated {count} favourites")
+    print(f"  [OK] Migrated {count} favourites")
     return count
 
 
@@ -302,7 +306,7 @@ def create_indexes():
     db['restaurant_staff'].create_index('restaurant_id')
     db['restaurant_staff'].create_index('user_id')
     
-    print("  ✓ Indexes created")
+    print("  [OK] Indexes created")
 
 
 def main():
@@ -315,7 +319,7 @@ def main():
     try:
         # Test connection
         client.admin.command('ping')
-        print("✓ MongoDB connection successful")
+        print("[OK] MongoDB connection successful")
         print()
         
         # Run migrations
@@ -342,10 +346,10 @@ def main():
         for collection, count in stats.items():
             print(f"  {collection}: {count} documents")
         print()
-        print("✓ Migration completed successfully!")
+        print("[OK] Migration completed successfully!")
         
     except Exception as e:
-        print(f"✗ Migration failed: {e}")
+        print(f"[FAIL] Migration failed: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)

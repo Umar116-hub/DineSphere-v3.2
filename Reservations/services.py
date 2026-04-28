@@ -15,19 +15,31 @@ LOCK_DURATION_MINUTES = 5
 def check_special_day(restaurant, date):
     """
     Validate if restaurant is open on selected date.
+    Checks SpecialDay (one-off) first, then WeeklySchedule (recurring).
 
     Raises:
         Exception if closed
     """
+    # 1. Check one-off special days (Holidays)
     special = SpecialDay.objects.filter(
         restaurant=restaurant,
         date=date
     ).first()
 
     if special and special.closed_full_day:
-        raise Exception("Restaurant is closed on selected date")
+        raise Exception(f"Restaurant is closed on {date.strftime('%Y-%m-%d')} for {special.name or 'a holiday'}.")
 
-    return special
+    if special:
+        return special
+
+    # 2. Check weekly recurring schedule
+    weekday = date.weekday()  # 0 is Monday
+    weekly = restaurant.weekly_schedules.filter(day_of_week=weekday).first()
+    
+    if weekly and weekly.is_closed:
+        raise Exception(f"Restaurant is closed every {date.strftime('%A')}.")
+
+    return weekly
 
 
 def get_available_tables(restaurant, date, start_time, end_time):
@@ -135,28 +147,54 @@ def generate_time_slots(restaurant, interval_minutes=30):
 def validate_booking_time(restaurant, date, start_time, end_time):
     """
     Validate that booking time is within restaurant hours.
+    Prioritizes SpecialDay rules, then WeeklySchedule rules, then default hours.
     
     Returns:
         (is_valid, error_message)
     """
-    # Check if holiday
-    special = SpecialDay.objects.filter(
-        restaurant=restaurant,
-        date=date,
-        closed_full_day=True
-    ).first()
-    
-    if special:
-        return False, f"Restaurant is closed on {date} for {special.name}"
-    
-    # Check if within operating hours
-    if start_time < restaurant.opening_time:
-        return False, f"Booking starts before opening time ({restaurant.opening_time.strftime('%I:%M %p')})"
-    
-    if end_time > restaurant.closing_time:
-        return False, f"Booking ends after closing time ({restaurant.closing_time.strftime('%I:%M %p')})"
-    
-    return True, None
+    try:
+        # 1. Get the applicable schedule for this date
+        # check_special_day returns SpecialDay or WeeklySchedule or None
+        schedule = check_special_day(restaurant, date)
+        
+        # 2. Determine opening/closing hours
+        # Defaults
+        opening = restaurant.opening_hour
+        closing = restaurant.closing_hour
+        
+        # Overrides
+        if schedule:
+            if hasattr(schedule, 'adjusted_opening_hour'): # It's a SpecialDay
+                if schedule.adjusted_opening_hour:
+                    opening = schedule.adjusted_opening_hour
+                if schedule.adjusted_closing_hour:
+                    closing = schedule.adjusted_closing_hour
+            else: # It's a WeeklySchedule
+                if schedule.opening_hour:
+                    opening = schedule.opening_hour
+                if schedule.closing_hour:
+                    closing = schedule.closing_hour
+                
+        # 3. Validation Logic
+        # Handle overnight closing (e.g., opens 6 PM, closes 2 AM)
+        is_overnight = closing < opening
+        
+        def is_within(t, start, end, overnight):
+            if not overnight:
+                return start <= t <= end
+            else:
+                return t >= start or t <= end
+
+        if not is_within(start_time, opening, closing, is_overnight):
+            return False, f"Booking starts at {start_time.strftime('%I:%M %p')}, which is outside operating hours ({opening.strftime('%I:%M %p')} - {closing.strftime('%I:%M %p')})"
+
+        if not is_within(end_time, opening, closing, is_overnight):
+            return False, f"Booking ends at {end_time.strftime('%I:%M %p')}, which is outside operating hours ({opening.strftime('%I:%M %p')} - {closing.strftime('%I:%M %p')})"
+
+        return True, None
+        
+    except Exception as e:
+        return False, str(e)
 
 
 def calculate_booking_price(tables, duration_hours):

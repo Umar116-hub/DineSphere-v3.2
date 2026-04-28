@@ -468,28 +468,33 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label>Restaurant Name <span class="required">*</span></label>
-                            <input type="text" name="res_name" placeholder="e.g. The Grand Bistro" required>
+                            <input type="text" name="res_name" placeholder="e.g. The Grand Bistro" value="{{ res_name|default:'' }}" required>
                         </div>
                         <div class="form-group">
                             <label>Tagline / Title <span class="optional">(optional)</span></label>
-                            <input type="text" name="res_title" placeholder="e.g. Authentic Italian Cuisine">
+                            <input type="text" name="res_title" placeholder="e.g. Authentic Italian Cuisine" value="{{ res_title|default:'' }}">
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
                             <label>City <span class="required">*</span></label>
-                            <input type="text" name="city" placeholder="e.g. New York" required>
+                            <select name="city" required>
+                                <option value="" disabled {% if not city %}selected{% endif %}>Select City</option>
+                                <option value="Karachi"   {% if city == 'Karachi'   %}selected{% endif %}>Karachi</option>
+                                <option value="Lahore"    {% if city == 'Lahore'    %}selected{% endif %}>Lahore</option>
+                                <option value="Islamabad" {% if city == 'Islamabad' %}selected{% endif %}>Islamabad</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label>Address <span class="required">*</span></label>
-                            <input type="text" name="address" placeholder="123 Main Street" required>
+                            <input type="text" name="address" placeholder="123 Main Street" value="{{ address|default:'' }}" required>
                         </div>
                     </div>
 
                     <div class="form-group full-width">
                         <label>About Restaurant <span class="optional">(optional)</span></label>
-                        <textarea name="res_about" placeholder="Tell your guests about your atmosphere, cuisine, and what makes you special..."></textarea>
+                        <textarea name="res_about" placeholder="Tell your guests about your atmosphere, cuisine, and what makes you special...">{{ res_about|default:'' }}</textarea>
                     </div>
 
                     <div class="form-group">
@@ -512,33 +517,39 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label>Opening Hour <span class="required">*</span></label>
-                            <input type="time" name="open_hour" value="18:00" required>
+                            <input type="time" name="open_hour" value="{{ open_hour|default:'18:00' }}" required>
                         </div>
                         <div class="form-group">
                             <label>Closing Hour <span class="required">*</span></label>
-                            <input type="time" name="close_hour" value="01:00" required>
+                            <input type="time" name="close_hour" value="{{ close_hour|default:'01:00' }}" required>
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
                             <label>Slot Duration (mins) <span class="optional">(default: 60)</span></label>
-                            <input type="number" name="slot_duration" placeholder="60" value="60">
+                            <input type="number" name="slot_duration" placeholder="60" value="{{ slot_duration|default:'60' }}">
                         </div>
                         <div class="form-group">
                             <label>Cooldown (mins) <span class="optional">(default: 30)</span></label>
-                            <input type="number" name="cooldown" placeholder="30" value="30">
+                            <input type="number" name="cooldown" placeholder="30" value="{{ cooldown|default:'30' }}">
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
                             <label>Advance Booking (days) <span class="optional">(default: 60)</span></label>
-                            <input type="number" name="advance_days" placeholder="60" value="60">
+                            <input type="number" name="advance_days" placeholder="60" value="{{ advance_days|default:'60' }}">
                         </div>
                         <div class="form-group">
                             <label>Phone Number <span class="required">*</span></label>
-                            <input type="tel" name="phone" placeholder="+1 234 567 8900" required>
+                            <input type="tel" name="phone" id="phoneInput"
+                                   placeholder="e.g. 0300-1234567"
+                                   value="{{ phone|default:'' }}"
+                                   inputmode="numeric"
+                                   pattern="[\d\s\+\-\(\)]+"
+                                   title="Phone number must contain digits only"
+                                   required>
                         </div>
                     </div>
 
@@ -549,11 +560,11 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label><i class="fab fa-facebook" style="color:#4267B2;margin-right:5px;"></i> Facebook</label>
-                            <input type="url" name="fb_link" placeholder="https://facebook.com/yourpage">
+                            <input type="url" name="fb_link" placeholder="https://facebook.com/yourpage" value="{{ fb_link|default:'' }}">
                         </div>
                         <div class="form-group">
                             <label><i class="fas fa-globe" style="color:#e67e22;margin-right:5px;"></i> Website</label>
-                            <input type="url" name="web_link" placeholder="https://yourwebsite.com">
+                            <input type="url" name="web_link" placeholder="https://yourwebsite.com" value="{{ web_link|default:'' }}">
                         </div>
                     </div>
 
@@ -618,10 +629,9 @@
             }
 
             if (!valid) {
-                // Shake effect
                 const card = document.querySelector('.form-card');
                 card.style.animation = 'none';
-                card.offsetHeight; // trigger reflow
+                card.offsetHeight;
                 card.style.animation = 'shake 0.4s ease';
             }
 
@@ -639,6 +649,15 @@
             });
         });
 
+        // Phone: strip non-digit characters (except +, -, space)
+        const phoneInput = document.getElementById('phoneInput');
+        if (phoneInput) {
+            phoneInput.addEventListener('input', function() {
+                // Remove any character that is not a digit, +, -, space, (, )
+                this.value = this.value.replace(/[^\d\s\+\-\(\)]/g, '');
+            });
+        }
+
         // Shake animation
         const style = document.createElement('style');
         style.textContent = `@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }`;
@@ -648,12 +667,28 @@
             document.querySelectorAll('.msg').forEach(m => { m.style.opacity = '0'; setTimeout(() => m.remove(), 300); });
         }, 5000);
 
-        // Set max date for DOB to today
+        // ── On page load: jump to the step that caused the server-side error ──
         document.addEventListener('DOMContentLoaded', function() {
+            // Set max date for DOB
             const dobInput = document.querySelector('input[name="dob"]');
             if (dobInput) {
                 const today = new Date().toISOString().split('T')[0];
                 dobInput.setAttribute('max', today);
+            }
+
+            // If server returned an error_step, navigate there WITHOUT validation
+            const errorStep = parseInt('{{ error_step|default:0 }}');
+            if (errorStep >= 1 && errorStep <= 3) {
+                // Bypass validation — just switch step display
+                document.querySelectorAll('.step-section').forEach(s => s.classList.remove('active'));
+                document.querySelector(`.step-section[data-step="${errorStep}"]`).classList.add('active');
+                document.querySelectorAll('.step-dot').forEach(d => {
+                    const ds = parseInt(d.dataset.step);
+                    d.classList.remove('active', 'done');
+                    if (ds === errorStep) d.classList.add('active');
+                    else if (ds < errorStep) d.classList.add('done');
+                });
+                currentStep = errorStep;
             }
         });
     </script>

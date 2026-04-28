@@ -12,6 +12,7 @@ class TableSize(models.Model):
     """
     Represents a table size with capacity and price factor.
     """
+    restaurant = models.ForeignKey('Restaurant', on_delete=models.CASCADE, null=True, blank=True, related_name='custom_table_sizes')
     capacity = models.PositiveIntegerField()
     size = models.CharField(max_length=20, blank=True, null=True)  # e.g., "Small", "Medium", "Large"
     price_factor = models.DecimalField(max_digits=5, decimal_places=2, default=1.0)
@@ -21,7 +22,7 @@ class TableSize(models.Model):
         return f"{self.size} ({self.capacity} seats)"
 
     class Meta:
-        unique_together = ('capacity', 'size')
+        unique_together = ('restaurant', 'capacity', 'size')
         
     def calculate_price(self, base_price):
         return base_price
@@ -34,10 +35,14 @@ class SeatingType(models.Model):
     """
     Represents a type of seating, e.g., Indoor, Outdoor, VIP.
     """
-    name = models.CharField(max_length=50, unique=True)
+    restaurant = models.ForeignKey('Restaurant', on_delete=models.CASCADE, null=True, blank=True, related_name='custom_seating_types')
+    name = models.CharField(max_length=50)
 
     def __str__(self):
         return self.name
+
+    class Meta:
+        unique_together = ('restaurant', 'name')
 
 
 # -------------------------------
@@ -51,7 +56,7 @@ class Restaurant(models.Model):
     title = models.CharField(max_length=100)
     image = models.ImageField(upload_to='Restaurants/media/images/', blank=True, null=True)
     about_restaurant = models.TextField(blank=True, null=True)
-    seating_types = models.ManyToManyField(SeatingType, blank=True)
+    seating_types = models.ManyToManyField(SeatingType, blank=True, related_name="offering_restaurants")
     created_at = models.DateTimeField(auto_now_add=True)
     fb_link = models.URLField(blank=True, null=True)
     website_link = models.URLField(blank=True, null=True)
@@ -118,11 +123,36 @@ class SpecialDay(models.Model):
     date = models.DateField()
     name = models.CharField(max_length=100, blank=True, null=True)
     closed_full_day = models.BooleanField(default=False)
-    adjusted_opening_hour = models.IntegerField(null=True, blank=True)
-    adjusted_closing_hour = models.IntegerField(null=True, blank=True)
+    adjusted_opening_hour = models.TimeField(null=True, blank=True)  # Changed to TimeField for consistency
+    adjusted_closing_hour = models.TimeField(null=True, blank=True)  # Changed to TimeField for consistency
 
     def __str__(self):
         return f"{self.restaurant.name} - {self.date}"
+
+
+class WeeklySchedule(models.Model):
+    """
+    Defines recurring weekly operating hours or closures.
+    Day 0 is Monday, Day 6 is Sunday (standard Python/Django weekday).
+    """
+    DAYS_OF_WEEK = [
+        (0, 'Monday'), (1, 'Tuesday'), (2, 'Wednesday'),
+        (3, 'Thursday'), (4, 'Friday'), (5, 'Saturday'), (6, 'Sunday')
+    ]
+    
+    restaurant = models.ForeignKey(Restaurant, on_delete=models.CASCADE, related_name='weekly_schedules')
+    day_of_week = models.IntegerField(choices=DAYS_OF_WEEK)
+    is_closed = models.BooleanField(default=False)
+    opening_hour = models.TimeField(null=True, blank=True)
+    closing_hour = models.TimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = ('restaurant', 'day_of_week')
+        ordering = ['day_of_week']
+
+    def __str__(self):
+        status = "Closed" if self.is_closed else f"{self.opening_hour} - {self.closing_hour}"
+        return f"{self.restaurant.name} - {self.get_day_of_week_display()}: {status}"
 
 
 class FavouriteRestaurant(models.Model):

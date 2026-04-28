@@ -17,18 +17,18 @@
     </header>
 
     <div class="container">
-        <form id="restaurantForm" method="post" action="../registration/" enctype="multipart/form-data">
-                        {% csrf_token %}
+        <form id="restaurantForm" method="post" action="{% url 'restaurant_registration' %}" enctype="multipart/form-data">
+            {% csrf_token %}
 
             <div class="section-title"><i class="fas fa-utensils"></i> Basic Information</div>
             <div class="grid-row">
                 <div class="form-group">
-                    <label>Restaurant Name</label>
-                    <input type="text" name="res_name" placeholder="e.g. The Grand Bistro" required>
+                    <label>Restaurant Name <span style="color:red">*</span></label>
+                    <input type="text" name="res_name" placeholder="e.g. The Grand Bistro" value="{{ res_name|default:'' }}" required>
                 </div>
                 <div class="form-group">
                     <label>Title / Tagline</label>
-                    <input type="text" name="res_title" placeholder="e.g. Authentic Italian Cuisine">
+                    <input type="text" name="res_title" placeholder="e.g. Authentic Italian Cuisine" value="{{ res_title|default:'' }}">
                 </div>
             </div>
 
@@ -40,49 +40,66 @@
             <div class="form-group">
                 <label>About Restaurant</label>
                 <textarea name="res_about" rows="4"
-                    placeholder="Tell your guests about your atmosphere and food..."></textarea>
+                    placeholder="Tell your guests about your atmosphere and food...">{{ res_about|default:'' }}</textarea>
+            </div>
+
+            <div class="section-title"><i class="fas fa-map-marker-alt"></i> Location & Contact</div>
+            <div class="grid-row">
+                <div class="form-group">
+                    <label>City <span style="color:red">*</span></label>
+                    <select name="city" required>
+                        <option value="" disabled {% if not city %}selected{% endif %}>Select City</option>
+                        <option value="Karachi"   {% if city == 'Karachi'   %}selected{% endif %}>Karachi</option>
+                        <option value="Lahore"    {% if city == 'Lahore'    %}selected{% endif %}>Lahore</option>
+                        <option value="Islamabad" {% if city == 'Islamabad' %}selected{% endif %}>Islamabad</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Address <span style="color:red">*</span></label>
+                    <input type="text" name="address" placeholder="123 Main Street" value="{{ address|default:'' }}" required>
+                </div>
+                <div class="form-group">
+                    <label>Phone Number <span style="color:red">*</span></label>
+                    <input type="tel" name="phone" placeholder="e.g. 0300-1234567" value="{{ phone|default:'' }}" required>
+                </div>
             </div>
 
             <div class="section-title"><i class="fas fa-link"></i> Links & Social</div>
             <div class="grid-row">
                 <div class="form-group">
                     <label><i class="fab fa-facebook"></i> Facebook Link</label>
-                    <input type="url" name="fb_link" placeholder="https://facebook.com/yourpage">
+                    <input type="url" name="fb_link" placeholder="https://facebook.com/yourpage" value="{{ fb_link|default:'' }}">
                 </div>
                 <div class="form-group">
                     <label><i class="fas fa-globe"></i> Website Link</label>
-                    <input type="url" name="web_link" placeholder="https://yourwebsite.com">
+                    <input type="url" name="web_link" placeholder="https://yourwebsite.com" value="{{ web_link|default:'' }}">
                 </div>
             </div>
 
             <div class="section-title"><i class="fas fa-clock"></i> Operation & Booking Policy</div>
             <div class="grid-row">
                 <div class="form-group">
-                    <label>Opening Hour</label>
-                    <input type="time" name="open_hour" required >
+                    <label>Opening Hour <span style="color:red">*</span></label>
+                    <input type="time" name="open_hour" value="{{ open_hour|default:'18:00' }}" required >
                 </div>
                 <div class="form-group">
-                    <label>Closing Hour</label>
-                    <input type="time" name="close_hour" required >
+                    <label>Closing Hour <span style="color:red">*</span></label>
+                    <input type="time" name="close_hour" value="{{ close_hour|default:'01:00' }}" required >
                 </div>
                 <div class="form-group">
                     <label>Cool Down Period (Mins)</label>
-                    <input type="number" name="cooldown" placeholder="e.g. 15">
+                    <input type="number" name="cooldown" placeholder="e.g. 15" value="{{ cooldown|default:'30' }}">
                 </div>
             </div>
 
             <div class="grid-row">
                 <div class="form-group">
-                    <label>Slot Duration (Mins)</label>
-                    <input type="number" name="slot_duration" placeholder="e.g. 60" required>
+                    <label>Slot Duration (Mins) <span style="color:red">*</span></label>
+                    <input type="number" name="slot_duration" placeholder="e.g. 60" value="{{ slot_duration|default:'60' }}" required>
                 </div>
                 <div class="form-group">
-                    <label>Advance Booking (Months)</label>
-                    <input type="number" name="advance_days" placeholder="e.g. 3">
-                </div>
-                <div class="form-group">
-                    <label>City</label>
-                    <input type="text" name="city" placeholder="Yokohama">
+                    <label>Advance Booking (Days)</label>
+                    <input type="number" name="advance_days" placeholder="e.g. 60" value="{{ advance_days|default:'60' }}">
                 </div>
             </div>
 
@@ -92,15 +109,14 @@
 
             <div id="seatingContainer">
                 <div class="seating-row">
-                    <select name="seat_type[]" id="seating-type">
+                    <select name="seat_type[]">
                         <option value="" disabled selected>Select Seating Type</option>
                         {% for seat in seatingtype %}
                         <option value="{{seat}}">{{seat}}</option>
                         {% endfor %}
                     </select>
-                    <input type="number" name="seat_price[]" placeholder="Price ($)" required>
-                    <input type="number" name="available_seats[]" placeholder="Available Seats" required>
-                    <!-- <div style="width: 40px;"></div> -->
+                    <input type="number" name="seat_price[]" placeholder="Price ($)">
+                    <input type="number" name="available_seats[]" placeholder="Available Seats">
                 </div>
             </div>
 

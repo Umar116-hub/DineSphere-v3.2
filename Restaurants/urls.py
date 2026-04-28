@@ -36,6 +36,12 @@ urlpatterns = [
     path('holidays/update/<int:id>/', views.updateHolidays, name='update_holidays'),
     path('holidays/delete/<int:id>/', views.deleteHolidays, name='delete_holidays'),
 
+    # Seating Types
+    path('seating-type/delete/<int:id>/', views.deleteSeatingType, name='delete_seating_type'),
+
+    # Table Sizes
+    path('table-size/delete/<int:id>/', views.deleteTableSize, name='delete_table_size'),
+
     # getting table size and seating type
     path('get-items/', get_items, name='get_items'),
 
@@ -43,6 +49,7 @@ urlpatterns = [
 
     # Analytics view, entry point for the dashboard
     path("", views.analytics, name="analytics"),
+    path("get-operational-hours/", views.get_operational_hours, name="get_operational_hours"),
     path("<str:tab>/", views.analytics),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

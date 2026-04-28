@@ -5,6 +5,8 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from .models import User, CustomerProfile, RestaurantStaff
 from .services import create_customer_user, create_owner_user
+from Restaurants.Services import create_restaurant_for_user
+from django.db import transaction
 
 
 
@@ -12,6 +14,8 @@ from .services import create_customer_user, create_owner_user
 
 def business_register(request):
     """Dedicated combined business registration: owner account + restaurant in one flow."""
+    ALLOWED_CITIES = ['Karachi', 'Lahore', 'Islamabad']
+
     if request.method == "GET":
         # If already logged in as owner, skip to restaurant registration
         if request.user.is_authenticated and request.user.role == 'OWNER':
@@ -19,90 +23,122 @@ def business_register(request):
         return render(request, 'UsersHandling/business_register.html')
 
     if request.method == "POST":
-        # --- Step 1: Extract owner account fields ---
-        username = request.POST.get("username", "").strip()
-        email = request.POST.get("email", "").strip()
-        password = request.POST.get("password", "")
-        dob = request.POST.get("dob") or None
-        gender = request.POST.get("gender") or None
-        image = request.FILES.get("image")
+        # --- Extract ALL fields up front so render_with_error can restore them ---
+        username  = request.POST.get("username", "").strip()
+        email     = request.POST.get("email", "").strip()
+        password  = request.POST.get("password", "")
+        dob       = request.POST.get("dob") or None
+        gender    = request.POST.get("gender") or None
 
-        # --- Step 2: Extract restaurant fields ---
-        res_name = request.POST.get("res_name", "").strip()
-        res_title = request.POST.get("res_title", "").strip()
-        city = request.POST.get("city", "").strip()
+        res_name    = request.POST.get("res_name", "").strip()
+        res_title   = request.POST.get("res_title", "").strip()
+        city        = request.POST.get("city", "").strip()
+        address     = request.POST.get("address", "").strip()
+        res_about   = request.POST.get("res_about", "").strip()
+        phone       = request.POST.get("phone", "").strip()
+        open_hour   = request.POST.get("open_hour", "18:00")
+        close_hour  = request.POST.get("close_hour", "01:00")
+        cooldown    = request.POST.get("cooldown", "30")
+        slot_dur    = request.POST.get("slot_duration", "60")
+        adv_days    = request.POST.get("advance_days", "60")
+        fb_link     = request.POST.get("fb_link", "")
+        web_link    = request.POST.get("web_link", "")
 
-        def render_with_error(msg):
+        # Helper — renders the form with all fields restored and jumps to the failing step
+        def render_with_error(msg, step=1):
             messages.error(request, msg)
             return render(request, 'UsersHandling/business_register.html', {
+                # Step 1 fields
                 'username': username, 'email': email, 'dob': dob, 'gender': gender,
+                # Step 2 fields
+                'res_name': res_name, 'res_title': res_title, 'city': city,
+                'address': address, 'res_about': res_about,
+                # Step 3 fields
+                'phone': phone, 'open_hour': open_hour, 'close_hour': close_hour,
+                'cooldown': cooldown, 'slot_duration': slot_dur,
+                'advance_days': adv_days, 'fb_link': fb_link, 'web_link': web_link,
+                # Tell the JS which step to open
+                'error_step': step,
             })
 
-        # --- Validations ---
+        # ── Step 1 Validations ──────────────────────────────────────────────
         if not username or not email or not password:
-            return render_with_error("Username, email and password are required.")
-        if not res_name:
-            return render_with_error("Restaurant name is required.")
-        if not city:
-            return render_with_error("City is required.")
-
-        # Password strength
+            return render_with_error("Username, email and password are required.", step=1)
         if len(password) < 8:
-            return render_with_error("Password must be at least 8 characters.")
+            return render_with_error("Password must be at least 8 characters.", step=1)
         if not any(c.isupper() for c in password):
-            return render_with_error("Password must contain at least one uppercase letter.")
+            return render_with_error("Password must contain at least one uppercase letter.", step=1)
         if not any(c.islower() for c in password):
-            return render_with_error("Password must contain at least one lowercase letter.")
+            return render_with_error("Password must contain at least one lowercase letter.", step=1)
         if not any(c.isdigit() for c in password):
-            return render_with_error("Password must contain at least one number.")
+            return render_with_error("Password must contain at least one number.", step=1)
 
+        # ── Step 2 Validations ──────────────────────────────────────────────
+        if not res_name:
+            return render_with_error("Restaurant name is required.", step=2)
+        if not city:
+            return render_with_error("City is required.", step=2)
+        if city not in ALLOWED_CITIES:
+            return render_with_error(f"City must be one of: {', '.join(ALLOWED_CITIES)}.", step=2)
+
+        # ── Step 3 Validations ──────────────────────────────────────────────
+        if not phone:
+            return render_with_error("Phone number is required.", step=3)
+        # Strip allowed formatting chars and ensure only digits remain
+        phone_digits = phone.replace('+', '').replace('-', '').replace(' ', '').replace('(', '').replace(')', '')
+        if not phone_digits.isdigit():
+            return render_with_error("Phone number must contain digits only (spaces, +, - allowed).", step=3)
+
+        # ── Create everything inside a transaction ─────────────────────────
+        from django.db import transaction
         try:
-            from datetime import datetime
+            with transaction.atomic():
+                from datetime import datetime as dt
+                # 1. Create owner user (raises ValueError if username/email taken)
+                user = create_owner_user(username, email, password)
+                user.date_of_birth = dob
+                user.gender = gender
+                image = request.FILES.get("image")
+                if image:
+                    user.image = image
+                user.save()
 
-            # 1. Create owner user
-            user = create_owner_user(username, email, password)
-            user.date_of_birth = dob
-            user.gender = gender
-            if image:
-                user.image = image
-            user.save()
+                # 2. Build restaurant data dict
+                restaurant_data = {
+                    "name":         res_name,
+                    "title":        res_title or res_name,
+                    "image":        request.FILES.get("res_image"),
+                    "about":        res_about,
+                    "city":         city,
+                    "address":      address,
+                    "phone":        phone,
+                    "opening_hour": dt.strptime(open_hour, "%H:%M").time(),
+                    "closing_hour": dt.strptime(close_hour, "%H:%M").time(),
+                    "cooldown":     int(cooldown or 30),
+                    "slot_duration": int(slot_dur or 60),
+                    "advance_days": int(adv_days or 60),
+                    "fb_link":      fb_link,
+                    "web_link":     web_link,
+                }
 
-            # 2. Create restaurant
-            open_hour_str = request.POST.get("open_hour", "18:00")
-            close_hour_str = request.POST.get("close_hour", "01:00")
+                # 3. Create restaurant + assign ownership (both inside atomic block)
+                restaurant = create_restaurant_for_user(user, restaurant_data)
 
-            from Restaurants.Services import create_restaurant_for_user
-            restaurant_data = {
-                "name": res_name,
-                "title": res_title or res_name,
-                "image": request.FILES.get("res_image"),
-                "about": request.POST.get("res_about", ""),
-                "city": city,
-                "address": request.POST.get("address", ""),
-                "phone": request.POST.get("phone", ""),
-                "opening_hour": datetime.strptime(open_hour_str, "%H:%M").time(),
-                "closing_hour": datetime.strptime(close_hour_str, "%H:%M").time(),
-                "cooldown": int(request.POST.get("cooldown") or 30),
-                "slot_duration": int(request.POST.get("slot_duration") or 60),
-                "advance_days": int(request.POST.get("advance_days") or 60),
-                "fb_link": request.POST.get("fb_link", ""),
-                "web_link": request.POST.get("web_link", ""),
-            }
-
-            restaurant = create_restaurant_for_user(user, restaurant_data)
-
-            # 3. Log in the new owner and redirect to dashboard
-            login(request, user)
+            # 4. Log in AFTER the transaction commits cleanly
+            from django.contrib.auth import login as auth_login
+            auth_login(request, user, backend='UsersHandling.backends.EmailOrUsernameBackend')
             request.session["selected_restaurant_id"] = restaurant.id
-            messages.success(request, f"Welcome! Your business '{restaurant.name}' has been registered successfully.")
+            messages.success(request, f"Welcome! Your business '{restaurant.name}' has been registered and is pending admin approval.")
             return redirect("analytics")
 
         except ValueError as e:
-            return render_with_error(str(e))
+            # Username/email already taken → step 1
+            return render_with_error(str(e), step=1)
         except Exception as e:
-            return render_with_error(f"Registration failed: {str(e)}")
+            return render_with_error(f"Registration failed: {str(e)}", step=1)
 
     return redirect("business_register")
+
 
 
 def auth(request):
@@ -180,15 +216,15 @@ def signup_user(request):
 
             if is_ajax:
                 from django.http import JsonResponse
-                login(request, user)
+                login(request, user, backend='UsersHandling.backends.EmailOrUsernameBackend')
                 return JsonResponse({'success': True})
 
             if intent == 'owner':
-                login(request, user)
+                login(request, user, backend='UsersHandling.backends.EmailOrUsernameBackend')
                 messages.success(request, "Business account created! Please register your restaurant.")
                 return redirect("restaurant_registration")
             else:
-                login(request, user)
+                login(request, user, backend='UsersHandling.backends.EmailOrUsernameBackend')
                 messages.success(request, "Account created successfully!")
                 next_url = request.POST.get('next') or request.GET.get('next')
                 if next_url:

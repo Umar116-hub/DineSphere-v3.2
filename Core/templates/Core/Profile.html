@@ -220,13 +220,17 @@
                         </div>
                     </div>
                     <p style="margin:0; color:#444; font-size:1rem; line-height:1.6; font-style: italic;">"{{ review.comment }}"</p>
-                    <div style="margin-top:12px; display:flex; align-items:center; gap:10px;">
+                    <div style="margin-top:12px; display:flex; align-items:center; gap:10px; flex-wrap: wrap;">
                         {% if review.on_display %}
                         <span class="badge success" style="font-size:0.75rem;"><i class="fas fa-check-circle"></i> Publicly Visible</span>
                         {% else %}
                         <span class="badge pending" style="font-size:0.75rem;"><i class="fas fa-clock"></i> Pending Moderation</span>
                         {% endif %}
                         <a href="/reservation/{{ review.restaurant.name|space_to_value }}/" style="font-size:0.8rem; color:var(--ternary-color); text-decoration:none; font-weight:600;">View Restaurant <i class="fas fa-chevron-right"></i></a>
+                        <form action="/reservation/delete-review/{{ review.id }}/" method="post" style="margin:0;" onsubmit="return confirm('Are you sure you want to remove this review? You can post a new one afterwards.');">
+                            {% csrf_token %}
+                            <button type="submit" style="background:none; border:none; color:#e74c3c; font-size:0.8rem; font-weight:600; cursor:pointer; padding:0;"><i class="fas fa-trash-alt"></i> Remove Review</button>
+                        </form>
                     </div>
                 </div>
                 {% endfor %}

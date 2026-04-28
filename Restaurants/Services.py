@@ -37,9 +37,10 @@ def create_restaurant(data):
 
 
 def create_restaurant_for_user(user, data):
-    # Step 1: Strict Check - only existing Owners can register restaurants
+    # Step 1: Promote user to OWNER if they aren't already
     if user.role != 'OWNER':
-        raise ValueError("Only dedicated Owner accounts can register restaurants. Please create an Owner account.")
+        user.role = 'OWNER'
+        user.save()
 
     # Step 2: Create restaurant
     restaurant = create_restaurant(data)
@@ -78,14 +79,14 @@ def add_table(request, restaurant_id):
 # Add Table Size (TableType)
 # -------------------------------
 def add_tabletype(request, restaurant=None):
-    # restaurant not needed, but kept for consistency
-
     if request.method == 'POST':
-        form = TableSizeForm(request.POST)
+        form = TableSizeForm(request.POST, restaurant=restaurant)
         if form.is_valid():
-            form.save()
+            obj = form.save(commit=False)
+            obj.restaurant = restaurant
+            obj.save()
     else:
-        form = TableSizeForm()
+        form = TableSizeForm(restaurant=restaurant)
 
     return form, form.is_bound and form.is_valid()
 
@@ -95,11 +96,13 @@ def add_tabletype(request, restaurant=None):
 # -------------------------------
 def add_seating_type(request, restaurant=None):
     if request.method == 'POST':
-        form = SeatingTypeForm(request.POST)
+        form = SeatingTypeForm(request.POST, restaurant=restaurant)
         if form.is_valid():
-            form.save()
+            obj = form.save(commit=False)
+            obj.restaurant = restaurant
+            obj.save()
     else:
-        form = SeatingTypeForm()
+        form = SeatingTypeForm(restaurant=restaurant)
 
     return form, form.is_bound and form.is_valid()
 
@@ -285,13 +288,18 @@ def auto_approve_bookings(restaurant_id):
     pending_to_approve = Booking.objects.filter(
         restaurant_id=restaurant_id,
         status=Booking.STATUS_PENDING,
+        payment_status=Booking.PAYMENT_STATUS_PAID,  # Only auto-approve paid bookings
         created_at__lte=limit
     )
     
     approved_count = 0
     for booking in pending_to_approve:
-        if booking.approve():
-            approved_count += 1
+        try:
+            if booking.approve():
+                approved_count += 1
+        except Exception as e:
+            # Log the error but don't crash the entire page load
+            print(f"Auto-approval failed for booking #{booking.id}: {str(e)}")
             
     return approved_count
 
@@ -309,13 +317,12 @@ def isOwner(user):
     ).exists()
 
 
-def getForm(tab:str, data=None):
-
+def getForm(tab:str, data=None, restaurant=None):
     match tab.lower():
         case "seatingtype":
-            return SeatingTypeForm(data=data)
+            return SeatingTypeForm(data=data, restaurant=restaurant)
         case "tablesize":
-            return TableSizeForm(data=data)
+            return TableSizeForm(data=data, restaurant=restaurant)
         case _:
             raise ValueError("Invalid tab name")
         
@@ -325,21 +332,23 @@ from django.http import JsonResponse
 
 def get_items(request):
     item_type = request.GET.get('type', '').lower()
+    restaurant_id = request.session.get("selected_restaurant_id")
     items = []
 
     try:
+        from django.db.models import Q
         if item_type == 'seatingtype':
-            data = SeatingType.objects.all()
-            # SeatingType only has 'name'
-            items = [{'primary': obj.name, 'secondary': 'Area Type'} for obj in data]
+            data = SeatingType.objects.filter(Q(restaurant__isnull=True) | Q(restaurant_id=restaurant_id))
+            items = [{'id': obj.id, 'primary': obj.name, 'secondary': 'Area Type', 'is_global': obj.restaurant_id is None} for obj in data]
             
         elif item_type == 'tablesize':
-            data = TableSize.objects.all()
-            # TableSize has 'size' and 'capacity'
+            data = TableSize.objects.filter(Q(restaurant__isnull=True) | Q(restaurant_id=restaurant_id))
             items = [
                 {
+                    'id': obj.id,
                     'primary': f"{obj.size}" if obj.size else "Standard", 
-                    'secondary': f"{obj.capacity} Seats"
+                    'secondary': f"{obj.capacity} Seats",
+                    'is_global': obj.restaurant_id is None
                 } for obj in data
             ]
 

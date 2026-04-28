@@ -755,358 +755,102 @@
     <div id="table-ids-container"></div>
 </form>
 
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script src="{% static 'Reservations/js/reservation.js' %}"></script>
 <script id="app-config" type="application/json">
 {
+    "restaurantId": "{{ restaurant.id }}",
     "restaurantName": "{{ restaurant.name|escapejs }}",
     "isAuthenticated": {{ request.user.is_authenticated|yesno:"true,false" }},
     "openingHour": "{{ restaurant.opening_hour|time:'H:i' }}",
     "closingHour": "{{ restaurant.closing_hour|time:'H:i' }}"
 }
 </script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="{% static 'Reservations/js/reservation.js' %}"></script>
+
 <script>
-    const appConfig = JSON.parse(document.getElementById('app-config').textContent);
-    const restaurantName = appConfig.restaurantName.replace(/ /g, "_");
-    const isAuthenticated = appConfig.isAuthenticated;
-    const restaurant_opening_hour = appConfig.openingHour;
-    const restaurant_closing_hour = appConfig.closingHour;
+(function() {
+    // Star Rating Logic
+    let selectedRating = 0;
+    const stars = document.querySelectorAll('#star-container .fa-star');
+    const ratingInput = document.getElementById('selected-rating');
 
-    // Dynamic Time Slot Generation
-    function generateTimeSlots() {
-        const select = document.getElementById('startTimeBtn');
-        const [openH, openM] = restaurant_opening_hour.split(':').map(Number);
-        const [closeH, closeM] = restaurant_closing_hour.split(':').map(Number);
-        
-        if (isNaN(openH) || isNaN(closeH)) return;
-
-        let currentH = openH;
-        let currentM = openM;
-
-        let slots = 0;
-        while (slots < 48) {
-            const timeStr = `${String(currentH).padStart(2, '0')}:${String(currentM).padStart(2, '0')}`;
-            const label = formatAMPM(currentH, currentM);
-            const opt = new Option(label, timeStr);
-            select.add(opt);
-
-            if (currentH === closeH && currentM >= closeM) break;
-
-            currentM += 30;
-            if (currentM >= 60) {
-                currentM = 0;
-                currentH++;
-            }
-            if (currentH >= 24) {
-                currentH = 0;
-            }
-            slots++;
-        }
-    }
-
-    function formatAMPM(hours, minutes) {
-        const ampm = hours >= 12 ? 'PM' : 'AM';
-        const h = hours % 12 || 12;
-        const m = String(minutes).padStart(2, '0');
-        return `${h}:${m} ${ampm}`;
-    }
-
-    // Modal & Auth Logic
-    function handleReserveClick() {
-        if (isAuthenticated) {
-            submitReservation();
-        } else {
-            document.getElementById('authModal').classList.add('active');
-            document.body.classList.add('modal-active');
-        }
-    }
-
-    function closeAuthModal() {
-        document.getElementById('authModal').classList.remove('active');
-        document.body.classList.remove('modal-active');
-    }
-
-    function redirectToSignup() {
-        saveBookingState();
-        const nextUrl = window.location.pathname;
-        window.location.href = `${window.location.origin}/uh/auth/?mode=signup&next=${encodeURIComponent(nextUrl)}`;
-    }
-
-    // Persistence Logic
-    function saveBookingState() {
-        const state = {
-            date: document.getElementById('dateBtn').innerText,
-            start: document.getElementById('startTimeBtn').value,
-            duration: document.getElementById('durationHrs').value,
-            tables: selectedTables
-        };
-        localStorage.setItem('pending_booking', JSON.stringify(state));
-    }
-
-    function restoreBookingState() {
-        const saved = localStorage.getItem('pending_booking');
-        if (saved) {
-            const state = JSON.parse(saved);
-            // Verify it's for this restaurant (could add restaurant name to state)
-            
-            // Restore Date
-            if (state.date && state.date !== 'Select Date') {
-                document.getElementById('dateBtn').innerText = state.date;
-                document.getElementById('form-date').value = state.date;
-            }
-            // Restore Time
-            document.getElementById('startTimeBtn').value = state.start;
-            // Restore Duration
-            if (state.duration && !isNaN(parseInt(state.duration))) {
-                document.getElementById('durationHrs').value = state.duration;
-            } else {
-                document.getElementById('durationHrs').value = '1';
-            }
-            // Restore Tables
-            state.tables.forEach(t => {
-                const el = document.querySelector(`.table-item[data-id="${t.id}"]`);
-                if (el) toggleTableSelection(el);
+    stars.forEach(star => {
+        star.addEventListener('click', () => {
+            selectedRating = parseInt(star.dataset.value);
+            ratingInput.value = selectedRating;
+            stars.forEach((s, i) => {
+                s.style.color = (i < selectedRating) ? '#f1c40f' : '#ccc';
             });
-
-            localStorage.removeItem('pending_booking'); // Clear after restore
-        }
-    }
-
-    // Existing UI Logic
-    function openSeating(evt, seatingId) {
-        var i, content, navlinks;
-        content = document.getElementsByClassName("seating-content");
-        for (i = 0; i < content.length; i++) {
-            content[i].classList.remove("active");
-        }
-        navlinks = document.getElementsByClassName("nav-item");
-        for (i = 0; i < navlinks.length; i++) {
-            navlinks[i].classList.remove("active");
-        }
-        document.getElementById(seatingId).classList.add("active");
-        evt.currentTarget.classList.add("active");
-    }
-
-    function checkAvailability() {
-        const dateStr = document.getElementById('form-date').value;
-        const startTime = document.getElementById('startTimeBtn').value;
-        const duration = document.getElementById('durationHrs').value;
-
-        if (!dateStr || !startTime) {
-            document.querySelectorAll(".table-item").forEach(table => {
-                table.classList.remove("booked-table");
+        });
+        star.addEventListener('mouseenter', () => {
+            const val = parseInt(star.dataset.value);
+            stars.forEach((s, i) => {
+                s.style.color = (i < val) ? '#f1c40f' : '#ccc';
             });
-            return;
-        }
-
-        const url = `../get-unavailable-tables/?date=${dateStr}&start_time=${startTime}&duration=${duration}&restaurant=${restaurantName}`;
-
-        fetch(url)
-            .then(response => response.json())
-            .then(data => {
-                const bookedTables = data.booked_tables || [];
-                document.querySelectorAll(".table-item").forEach(table => {
-                    const tableId = parseInt(table.dataset.id);
-                    if (bookedTables.includes(tableId)) {
-                        table.classList.add("booked-table");
-                        // If it's already selected, deselect it
-                        if (table.classList.contains("selected")) {
-                            toggleTableSelection(table);
-                        }
-                    } else {
-                        table.classList.remove("booked-table");
-                    }
-                });
-            })
-            .catch(err => console.error("Error fetching availability", err));
-    }
-
-    // Initialize Flatpickr
-    flatpickr("#dateBtn", {
-        minDate: "today",
-        onChange: function (selectedDates, dateStr) {
-            document.getElementById('dateBtn').innerText = dateStr;
-            document.getElementById('form-date').value = dateStr;
-            checkAvailability();
-        }
-    });
-
-    // Add event listeners for dynamic updates
-    document.addEventListener("DOMContentLoaded", function () {
-        document.getElementById('startTimeBtn').addEventListener('change', checkAvailability);
-        document.getElementById('durationHrs').addEventListener('change', () => {
-            checkAvailability();
-            updateSummary();
         });
     });
 
-    let selectedTables = [];
-    function toggleTableSelection(el) {
-        el.classList.toggle('selected');
-        const tableId = el.dataset.id;
-        if (el.classList.contains('selected')) {
-            selectedTables.push({
-                id: tableId,
-                price: parseFloat(el.dataset.price),
-                cap: parseInt(el.dataset.cap)
-            });
-        } else {
-            selectedTables = selectedTables.filter(t => t.id !== tableId);
-        }
-        updateSummary();
-    }
-
-    function updateSummary() {
-        let totalHourly = 0;
-        let totalCap = 0;
-        selectedTables.forEach(t => {
-            totalHourly += t.price;
-            totalCap += t.cap;
+    document.getElementById('star-container')?.addEventListener('mouseleave', () => {
+        stars.forEach((s, i) => {
+            s.style.color = (i < selectedRating) ? '#f1c40f' : '#ccc';
         });
-        const hours = parseInt(document.getElementById('durationHrs').value);
-        const finalTotal = totalHourly * hours;
-        document.getElementById('sum-cap').innerText = totalCap;
-        document.getElementById('sum-hourly').innerText = "$" + totalHourly.toFixed(2);
-        document.getElementById('sum-total').innerText = "$" + finalTotal.toFixed(2);
-        document.getElementById('form-cap').value = totalCap;
-    }
-
-    document.addEventListener("DOMContentLoaded", function () {
-        // Star Rating Interactivity
-        const stars = document.querySelectorAll("#star-container i");
-        const ratingInput = document.getElementById("selected-rating");
-
-        stars.forEach(star => {
-            star.addEventListener("mouseover", function() {
-                const val = this.dataset.value;
-                stars.forEach(s => {
-                    if (s.dataset.value <= val) s.classList.add('active');
-                    else s.classList.remove('active');
-                });
-            });
-
-            star.addEventListener("mouseout", function() {
-                const currentVal = ratingInput.value;
-                stars.forEach(s => {
-                    if (s.dataset.value <= currentVal) s.classList.add('active');
-                    else s.classList.remove('active');
-                });
-            });
-
-            star.addEventListener("click", function() {
-                ratingInput.value = this.dataset.value;
-                stars.forEach(s => {
-                    if (s.dataset.value <= ratingInput.value) s.classList.add('active');
-                    else s.classList.remove('active');
-                });
-            });
-        });
-
-        generateTimeSlots();
-        restoreBookingState();
-        initTestimonialCarousel();
-        
-        const submitBtn = document.getElementById("submitReviewBtn");
-        if (submitBtn) {
-            submitBtn.addEventListener("click", function () {
-                const rating = document.getElementById("selected-rating").value;
-                const text = document.getElementById("reviewText").value;
-                if (rating == 0) return alert("Please select a star rating");
-                
-                const formData = new FormData();
-                formData.append("rating", rating);
-                formData.append("text", text);
-                const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-                fetch(`/reservation/{{restaurant.name|space_to_value:"_"}}/postReview/`, {
-                    method: "POST",
-                    headers: { "X-CSRFToken": csrftoken },
-                    body: formData
-                })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
-                        alert("Review submitted!");
-                        document.getElementById("reviewText").value = "";
-                        document.getElementById("selected-rating").value = 0;
-                    } else alert("Error: " + data.error);
-                })
-                .catch(() => alert("Something went wrong"));
-            });
-        }
     });
 
-    function submitReservation() {
-        if (!isAuthenticated) {
-            // Save current selection to localStorage
-            const state = {
-                date: document.getElementById('form-date').value,
-                start: document.getElementById('startTimeBtn').value,
-                duration: document.getElementById('durationHrs').value,
-                tables: selectedTables
-            };
-            localStorage.setItem('pending_booking', JSON.stringify(state));
-            
-            // Redirect to auth with next parameter
-            const nextUrl = window.location.pathname;
-            window.location.href = `${window.location.origin}/uh/auth/?next=${encodeURIComponent(nextUrl)}`;
-            return;
-        }
+    // Clear Button
+    document.getElementById('clearReviewBtn')?.addEventListener('click', () => {
+        selectedRating = 0;
+        ratingInput.value = 0;
+        document.getElementById('reviewText').value = '';
+        stars.forEach(s => s.style.color = '#ccc');
+    });
 
-        const startTime = document.getElementById('startTimeBtn').value;
-        const date = document.getElementById('form-date').value;
-        if (!date || !startTime || selectedTables.length === 0) {
-            return alert("Please select Date, Time, and at least one Table.");
-        }
-        let duration = parseInt(document.getElementById('durationHrs').value);
-        if (isNaN(duration) || duration <= 0) {
-            duration = 1;
-        }
-        let [h, m] = startTime.split(':');
-        let endH = (parseInt(h) + duration).toString().padStart(2, '0');
-        const endTimeStr = `${endH}:${m}`;
-        document.getElementById('form-start').value = startTime;
-        document.getElementById('form-end').value = endTimeStr;
-        let durationInput = document.getElementById('form-duration') || document.createElement('input');
-        durationInput.type = 'hidden'; durationInput.name = 'duration'; durationInput.id = 'form-duration';
-        document.getElementById('finalForm').appendChild(durationInput);
-        durationInput.value = duration;
-        document.getElementById('form-price').value = document.getElementById('sum-total').innerText.replace('$', '');
-        const container = document.getElementById('table-ids-container');
-        container.innerHTML = '';
-        selectedTables.forEach(t => {
-            const inp = document.createElement('input');
-            inp.type = 'hidden'; inp.name = 'table_ids'; inp.value = t.id;
-            container.appendChild(inp);
+    // Submit Review
+    const submitBtn = document.getElementById('submitReviewBtn');
+    if (submitBtn) {
+        submitBtn.addEventListener('click', async () => {
+            const rating = ratingInput.value;
+            const text = document.getElementById('reviewText').value.trim();
+
+            if (!rating || rating === '0') {
+                alert('Please select a star rating.');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+
+            try {
+                const config = JSON.parse(document.getElementById('app-config').textContent);
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+                const url = `/reservation/${config.restaurantName.replace(/ /g, '_')}/postReview/`;
+
+                const resp = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: `rating=${encodeURIComponent(rating)}&text=${encodeURIComponent(text)}`
+                });
+
+                const data = await resp.json();
+
+                if (data.success) {
+                    // Show success and redirect to profile
+                    alert('Review submitted! It will appear on your profile as "Pending Moderation" until approved.');
+                    window.location.href = '/profile/#my-reviews';
+                } else {
+                    alert(data.error || 'Failed to submit review.');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Post Review';
+                }
+            } catch (err) {
+                alert('Something went wrong. Please try again.');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Post Review';
+            }
         });
-        document.getElementById('finalForm').submit();
     }
-
-    function initTestimonialCarousel() {
-        const track = document.getElementById('testimonial-track');
-        if (!track) return;
-        const slides = Array.from(track.children);
-        const dotsContainer = document.getElementById('carousel-dots');
-        let currentSlide = 0;
-        const totalSlides = slides.length;
-        if (totalSlides === 0) return;
-        track.style.width = `${totalSlides * 100}%`;
-        slides.forEach(slide => slide.style.width = `${100 / totalSlides}%`);
-        if (dotsContainer) {
-            slides.forEach((_, index) => {
-                const dot = document.createElement('div');
-                dot.classList.add('dot');
-                if (index === 0) dot.classList.add('active');
-                dot.addEventListener('click', () => { currentSlide = index; updateCarousel(); });
-                dotsContainer.appendChild(dot);
-            });
-        }
-        function updateCarousel() {
-            const percentage = -(currentSlide * (100 / totalSlides));
-            track.style.transform = `translateX(${percentage}%)`;
-            document.querySelectorAll('.dot').forEach((dot, i) => dot.classList.toggle('active', i === currentSlide));
-        }
-        setInterval(() => { currentSlide = (currentSlide + 1) % totalSlides; updateCarousel(); }, 2700);
-    }
+})();
 </script>
 {% endblock main %}

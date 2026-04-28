@@ -133,6 +133,11 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 AUTH_USER_MODEL = 'UsersHandling.User'
 LOGIN_URL = '/uh/auth/'
 
+AUTHENTICATION_BACKENDS = [
+    'UsersHandling.backends.EmailOrUsernameBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
 MEDIA_URL = '/media/'
 MEDIA_ROOT = join(BASE_DIR, 'media')
 

@@ -1,25 +1,186 @@
 {% extends "Restaurants/base.html" %}
 {% load static %}
-{% block title %} Days off {% endblock %}
-{% block name %} Holidays {% endblock %}
+{% block title %} Operations Schedule {% endblock %}
+{% block name %} Schedule {% endblock %}
 {% block styles %}
 <link rel="stylesheet" href="{% static 'Restaurants/css/stylishgrid.css' %}">
 <link rel="stylesheet" href="{% static 'Restaurants/css/drawerform.css' %}">
+<style>
+    .schedule-tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 25px;
+        padding: 5px;
+        background: rgba(30, 41, 59, 0.5);
+        border-radius: 12px;
+        width: fit-content;
+    }
+    .tab-btn {
+        padding: 12px 24px;
+        border: none;
+        background: transparent;
+        color: #f8fafc; /* Brighter inactive text */
+        cursor: pointer;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .tab-btn.active {
+        background: #f59e0b;
+        color: #1e293b;
+    }
+    .tab-btn:not(.active):hover {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .weekly-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+    }
+    .weekly-card, .item-card {
+        background: #27303f; /* Solid dark background for better text contrast */
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
+        padding: 24px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 220px;
+    }
+    .weekly-card:hover, .item-card:hover {
+        transform: translateY(-5px);
+        border-color: #f59e0b;
+        box-shadow: 0 12px 30px rgba(0,0,0,0.4);
+    }
+    
+    .day-header, .item-header {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 15px;
+        padding-right: 60px; /* Crucial: make space for the absolute badge */
+    }
+    .day-name, .item-title {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #ffffff;
+        margin-bottom: 4px;
+    }
+    .item-label {
+        color: #f59e0b;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .status-badge {
+        position: absolute !important;
+        top: 15px !important;
+        right: 15px !important;
+        left: auto !important;
+        width: auto !important; /* Prevents it from stretching */
+        min-width: 60px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.65rem;
+        padding: 6px 12px;
+        border-radius: 20px;
+        text-transform: uppercase;
+        font-weight: 800;
+        letter-spacing: 1px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        z-index: 100;
+    }
+    .status-open { background: rgba(16, 185, 129, 0.2) !important; color: #10b981 !important; border: 1px solid rgba(16, 185, 129, 0.4) !important; }
+    .status-closed { background: rgba(239, 68, 68, 0.2) !important; color: #ef4444 !important; border: 1px solid rgba(239, 68, 68, 0.4) !important; }
+
+    /* Remove any long capsules or bars from cards */
+    .weekly-card::before, .item-card::before,
+    .weekly-card::after, .item-card::after {
+        display: none !important;
+    }
+    
+    .time-info {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        color: #cbd5e1; /* Clearer silver text */
+        margin-bottom: 20px;
+    }
+    .time-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 1rem;
+    }
+    .time-row i {
+        color: #f59e0b;
+        width: 16px;
+    }
+
+    .action-row {
+        margin-top: auto;
+    }
+    
+    .edit-btn {
+        width: 100%;
+        padding: 10px;
+        background: rgba(245, 158, 11, 0.1);
+        color: #f59e0b;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+    .edit-btn:hover {
+        background: #f59e0b;
+        color: #1e293b;
+        transform: scale(1.02);
+    }
+
+    /* Selection Styles */
+    .item-card.selected {
+        border: 2px solid #f59e0b;
+        background: rgba(245, 158, 11, 0.08);
+    }
+    
+    #weekly-section { display: none; }
+    #weekly-section.active { display: block; }
+    #holiday-section { display: none; }
+    #holiday-section.active { display: block; }
+
+    .tab-holiday-only { display: none; }
+    .holiday-active .tab-holiday-only { display: flex; }
+</style>
 {% endblock %}
+
 {% block buttons %}
-<div class="action-card btn-add" id="open-drawer">
+<div class="action-card btn-add tab-holiday-only" id="open-drawer">
     <div class="icon-box">
         <i class="fas fa-calendar-plus"></i>
     </div>
     <div class="card-content">
-        <span class="card-label">Add Holiday</span>
-        <span class="card-value">New Date</span>
+        <span class="card-label">One-time Holiday</span>
+        <span class="card-value">Add New</span>
     </div>
 </div>
 
-<div class="action-card btn-delete">
+<div class="action-card btn-delete tab-holiday-only">
     <div class="icon-box">
-        <i class="fas fa-calendar-minus"></i>
+        <i class="fas fa-trash-alt"></i>
     </div>
     <div class="card-content">
         <span class="card-label">Remove Holiday</span>
@@ -41,90 +202,144 @@
 {% block model_name %}
 holidays
 {% endblock %}
+
 {% block content %}
-<div class="container">
-    <header class="filter-panel">
-        <div class="filter-group">
-            <span class="filter-label">View</span>
-            <div class="view-switcher">
-                <button class="view-btn active" id="gridBtn" title="Grid View">
-                    <i class="fas fa-th-large"></i>
-                </button>
-                <button class="view-btn" id="listBtn" title="List View">
-                    <i class="fas fa-list"></i>
-                </button>
-            </div>
-        </div>
+<div class="container" id="schedule-container">
+    <div class="schedule-tabs">
+        <button class="tab-btn active" data-tab="weekly">
+            <i class="fas fa-redo"></i> Weekly Schedule
+        </button>
+        <button class="tab-btn" data-tab="holiday">
+            <i class="fas fa-calendar-day"></i> One-time Holidays
+        </button>
+    </div>
 
+    <!-- WEEKLY SCHEDULE SECTION -->
+    <div id="weekly-section" class="tab-content active">
+        <div class="weekly-grid">
+            {% for item in weekly_data %}
+                <div class="weekly-card {% if item.schedule.is_closed %}closed{% else %}open{% endif %}">
+                    <span class="status-badge {% if item.schedule.is_closed %}status-closed{% else %}status-open{% endif %}">
+                        {% if item.schedule.is_closed %}Closed{% else %}Open{% endif %}
+                    </span>
+                    
+                    <div class="day-header">
+                        <span class="day-name">{{ item.day_name }}</span>
+                        <span class="item-label">Recurring Schedule</span>
+                    </div>
 
-        <div class="filter-group">
-            <input type="text" class="custom-select" placeholder="Search items..." style="width: 200px;">
-        </div>
-    </header>
+                    <div class="time-info">
+                        {% if item.schedule.is_closed %}
+                            <p>Closed every {{ item.day_name }}.</p>
+                        {% else %}
+                            <div class="time-row">
+                                <i class="fas fa-sun"></i>
+                                <span>{{ item.schedule.opening_hour|default:restaurant.opening_hour }}</span>
+                            </div>
+                            <div class="time-row">
+                                <i class="fas fa-moon"></i>
+                                <span>{{ item.schedule.closing_hour|default:restaurant.closing_hour }}</span>
+                            </div>
+                        {% endif %}
+                    </div>
 
-    <main class="data-grid grid-view" id="mainGrid">
-        {% for special_day in special_days %}
-
-        <div class="item-card clickable-card" 
-            data-label="adventure" 
-            data-id="{{ special_day.id }}"
-            data-name="{{ special_day.name }}"
-            data-date="{{ special_day.date|date:'Y-m-d' }}"  
-            data-closed_full_day ="{{ special_day.closed_full_day }}" 
-            data-adjusted_opening_hour ="{{special_day.adjusted_opening_hour}}" 
-            data-adjusted_closing_hour ="{{ special_day.adjusted_closing_hour }}" >
-            <div class="item-content">
-                <div>
-                    <span class="item-label">{{ special_day.date }}</span>
-                    <h3 class="item-title">{{ special_day.name }}</h3>
+                    <div class="action-row">
+                        <button class="edit-btn open-weekly-drawer" 
+                                data-day="{{ item.day_idx }}" 
+                                data-dayname="{{ item.day_name }}"
+                                data-closed="{{ item.schedule.is_closed|yesno:'true,false' }}"
+                                data-open="{{ item.schedule.opening_hour|default:restaurant.opening_hour|time:'H:i' }}"
+                                data-close="{{ item.schedule.closing_hour|default:restaurant.closing_hour|time:'H:i' }}">
+                            <i class="fas fa-edit"></i> Update Rule
+                        </button>
+                    </div>
                 </div>
-                <div class="item-price">
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- ONE-TIME HOLIDAYS SECTION -->
+    <div id="holiday-section" class="tab-content">
+        <header class="filter-panel" style="background: transparent; padding: 0; margin-bottom: 25px;">
+            <div class="filter-group">
+                <input type="text" class="custom-select" id="holidaySearch" placeholder="Search holidays..." style="width: 300px; background: #27303f; color: white; border: 1px solid rgba(255,255,255,0.1);">
+            </div>
+        </header>
+
+        <main class="weekly-grid" id="mainGrid">
+            {% for special_day in special_days %}
+            <div class="item-card clickable-card {% if special_day.closed_full_day %}closed{% else %}open{% endif %}" 
+                data-id="{{ special_day.id }}"
+                data-name="{{ special_day.name }}"
+                data-date="{{ special_day.date|date:'Y-m-d' }}"  
+                data-closed_full_day ="{{ special_day.closed_full_day|yesno:'true,false' }}" 
+                data-adjusted_opening_hour ="{{ special_day.adjusted_opening_hour|time:'H:i' }}" 
+                data-adjusted_closing_hour ="{{ special_day.adjusted_closing_hour|time:'H:i' }}" >
+                
+                <span class="status-badge {% if special_day.closed_full_day %}status-closed{% else %}status-open{% endif %}">
+                    {% if special_day.closed_full_day %}Closed{% else %}Open{% endif %}
+                </span>
+
+                <div class="item-header">
+                    <span class="item-label">{{ special_day.date|date:"F j, Y" }}</span>
+                    <h3 class="item-title">{{ special_day.name|default:"Holiday" }}</h3>
+                </div>
+
+                <div class="time-info">
                     {% if special_day.closed_full_day %}
-                        <span class="badge status-cancelled">Closed All Day</span>
-                    {% elif special_day.adjusted_opening_hour and special_day.adjusted_closing_hour %}
-                        {{ special_day.adjusted_opening_hour }} - {{ special_day.adjusted_closing_hour }}
+                        <p>Restaurant closed all day.</p>
                     {% else %}
-                        <span class="badge status-pending">Special Hours</span>
+                        <div class="time-row">
+                            <i class="fas fa-clock"></i>
+                            <span>{{ special_day.adjusted_opening_hour|default:"Default" }} - {{ special_day.adjusted_closing_hour|default:"Default" }}</span>
+                        </div>
                     {% endif %}
                 </div>
-            </div>
-        </div>
-        {% empty %}
-            <p>No special days or holidays yet.</p>
-        {% endfor %}
-    </main>
-</div>
 
+                <div class="action-row">
+                    <button class="edit-btn btn-update-trigger">
+                        <i class="fas fa-edit"></i> Update Details
+                    </button>
+                </div>
+            </div>
+            {% empty %}
+                <p style="color: #cbd5e1; grid-column: 1/-1; text-align: center; padding: 40px; background: rgba(255,255,255,0.02); border-radius: 16px;">No specific holidays scheduled yet.</p>
+            {% endfor %}
+        </main>
+    </div>
+</div>
 {% endblock %}
 
 {% block forms %}
 <div class="drawer-overlay" id="drawerOverlay"></div>
 
+<!-- Holiday Drawer -->
 <div class="side-drawer" id="sideDrawer">
     <div class="drawer-header">
-        <h2>Holiday Management</h2>
+        <h2 id="drawer-title">Add Special Holiday</h2>
         <button class="close-drawer" id="closeDrawer">
             <i class="fas fa-times"></i>
         </button>
     </div>
 
-    <form id="drawerForm" class="drawer-form" method="post" >
+    <form id="drawerForm" class="drawer-form" method="post">
         {% csrf_token %}
+        <input type="hidden" name="action" value="add_holiday">
         
         <div class="form-section">
-            <h3 class="section-title"><i class="fas fa-calendar-day"></i> Schedule Detail</h3>
+            <h3 class="section-title"><i class="fas fa-calendar-day"></i> Date Details</h3>
             <div class="form-grid">
                 <div class="form-group">
-                    <label>Holiday Date</label>
+                    <label>Date</label>
                     {{ form.date }}
                 </div>
                 <div class="form-group">
-                    <label>Internal Name</label>
+                    <label>Name (e.g. Christmas)</label>
                     {{ form.name }}
                 </div>
                 <div class="form-group full-width">
                     <div class="checkbox-wrapper">
-                        {{ form.closed_full_day }} <span>Closed for full day?</span>
+                        {{ form.closed_full_day }} <span>Close for entire day?</span>
                     </div>
                 </div>
             </div>
@@ -132,28 +347,166 @@ holidays
 
         <div class="form-section" id="adjusted-hours-section">
             <h3 class="section-title"><i class="fas fa-clock"></i> Adjusted Hours</h3>
-            <p style="font-size: 0.8rem; color: #6b7280; margin-bottom: 15px;">Only needed if not closed full day.</p>
             <div class="form-grid">
                 <div class="form-group">
-                    <label>Opening Hour</label>
+                    <label>Opening</label>
                     {{ form.adjusted_opening_hour }}
                 </div>
                 <div class="form-group">
-                    <label>Closing Hour</label>
+                    <label>Closing</label>
                     {{ form.adjusted_closing_hour }}
                 </div>
             </div>
         </div>
 
         <div class="drawer-footer">
-            <button type="button" class="btn-secondary" id="clearForm">Clear</button>
             <button type="submit" class="btn-primary">Save Holiday</button>
+        </div>
+    </form>
+</div>
+
+<!-- Weekly Schedule Drawer -->
+<div class="side-drawer" id="weeklyDrawer" style="display: none;">
+    <div class="drawer-header">
+        <h2 id="weekly-drawer-title">Weekly Rule</h2>
+        <button class="close-drawer close-weekly">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    <form class="drawer-form" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="add_weekly">
+        <input type="hidden" name="day_of_week" id="id_day_of_week">
+        
+        <div class="form-section">
+            <h3 class="section-title"><i class="fas fa-redo"></i> Recurring Status</h3>
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <div class="checkbox-wrapper">
+                        {{ weekly_form.is_closed }} <span>Close every <span id="target-day-name"></span>?</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section" id="weekly-hours-section">
+            <h3 class="section-title"><i class="fas fa-clock"></i> Standard Hours</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Opening</label>
+                    {{ weekly_form.opening_hour }}
+                </div>
+                <div class="form-group">
+                    <label>Closing</label>
+                    {{ weekly_form.closing_hour }}
+                </div>
+            </div>
+        </div>
+
+        <div class="drawer-footer">
+            <button type="submit" class="btn-primary">Save Rule</button>
         </div>
     </form>
 </div>
 {% endblock %}
 
 {% block scripts %}
+<script>
+    // Tab Switching & Button Visibility
+    const scheduleContainer = document.getElementById('schedule-container');
+    const mainActions = document.querySelector('.panel-container'); // This is the ID-less container we'll use
+    
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            btn.classList.add('active');
+            const targetId = btn.dataset.tab + '-section';
+            document.getElementById(targetId).classList.add('active');
+            
+            // Toggle container class for button visibility in header
+            if (btn.dataset.tab === 'holiday') {
+                mainActions?.classList.add('holiday-active');
+            } else {
+                mainActions?.classList.remove('holiday-active');
+            }
+        });
+    });
+
+    // Handle In-card Update Clicks (Holidays)
+    document.addEventListener('click', function(e) {
+        const updateTrigger = e.target.closest('.btn-update-trigger');
+        if (updateTrigger) {
+            e.stopPropagation();
+            const card = updateTrigger.closest('.clickable-card');
+            if (card) {
+                // 1. Select the card
+                document.querySelectorAll('.item-card').forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                
+                // 2. Set Global Data
+                window.selectedId = card.dataset.id;
+                window.selectedData = { ...card.dataset };
+
+                // 3. Trigger the standard Update process
+                const sideDrawer = document.getElementById('sideDrawer');
+                const overlay = document.getElementById('drawerOverlay');
+                const form = document.getElementById('drawerForm');
+                
+                if (sideDrawer && overlay && form) {
+                    overlay.classList.add('show');
+                    sideDrawer.classList.add('open');
+                    // Populate form from card dataset
+                    if (window.PageMappers && window.PageMappers['holidays']) {
+                        window.PageMappers['holidays'](form, window.selectedData);
+                    }
+                }
+            }
+        }
+    });
+
+    // Weekly Drawer Logic (Specific to weekly cards)
+    const weeklyDrawer = document.getElementById('weeklyDrawer');
+    const overlay = document.getElementById('drawerOverlay');
+
+    document.querySelectorAll('.open-weekly-drawer').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const data = btn.dataset;
+            document.getElementById('id_day_of_week').value = data.day;
+            document.getElementById('target-day-name').textContent = data.dayname;
+            document.getElementById('weekly-drawer-title').textContent = `Rules for ${data.dayname}s`;
+            
+            const isClosed = data.closed === 'true';
+            document.querySelector('#weeklyDrawer input[name="is_closed"]').checked = isClosed;
+            document.querySelector('#weeklyDrawer input[name="opening_hour"]').value = data.open || '';
+            document.querySelector('#weeklyDrawer input[name="closing_hour"]').value = data.close || '';
+            
+            weeklyDrawer.style.display = 'block';
+            overlay.classList.add('active');
+            setTimeout(() => weeklyDrawer.classList.add('open'), 10);
+        });
+    });
+
+    document.querySelectorAll('.close-weekly').forEach(btn => {
+        btn.addEventListener('click', () => {
+            weeklyDrawer.classList.remove('open');
+            overlay.classList.remove('active');
+            setTimeout(() => weeklyDrawer.style.display = 'none', 300);
+        });
+    });
+
+    // Search logic
+    document.getElementById('holidaySearch')?.addEventListener('input', function(e) {
+        const term = e.target.value.toLowerCase();
+        document.querySelectorAll('#holiday-section .item-card').forEach(card => {
+            const name = card.dataset.name.toLowerCase();
+            const date = card.dataset.date.toLowerCase();
+            card.style.display = (name.includes(term) || date.includes(term)) ? 'flex' : 'none';
+        });
+    });
+</script>
 <script src="{% static 'Restaurants/js/stylishgrid.js' %}"></script>
 <script src="{% static 'Restaurants/js/drawerform.js' %}"></script>
 {% endblock %}

@@ -167,8 +167,17 @@ def post_review(request, Restaurant_name):
         if not rating:
             return JsonResponse({"success": False, "error": "Rating required"})
         
-        # Save review to your model
         restaurant = get_object_or_404(Restaurant, name=Restaurant_name.replace("_", " "))
+        
+        # Check if user already has a review for this restaurant
+        existing_review = Review.objects.filter(restaurant=restaurant, user=request.user).first()
+        if existing_review:
+            return JsonResponse({
+                "success": False, 
+                "error": "You have already reviewed this restaurant. Remove your existing review from your profile to post a new one."
+            })
+        
+        # Save review to model
         review = Review.objects.create(
             restaurant=restaurant,
             user=request.user,
@@ -191,6 +200,31 @@ def post_review(request, Restaurant_name):
         return JsonResponse({"success": True})
 
     return JsonResponse({"success": False, "error": "Invalid request method"})
+
+
+@login_required
+def delete_review(request, review_id):
+    """Allow a user to delete their own review from their profile."""
+    if request.method == "POST":
+        review = get_object_or_404(Review, id=review_id, user=request.user)
+        
+        # Decrement ReviewSummary counts
+        from Restaurants.models import ReviewSummary
+        summary = ReviewSummary.objects.filter(restaurant=review.restaurant).first()
+        if summary:
+            rating_int = review.rating
+            if rating_int == 5 and summary.five_star > 0: summary.five_star -= 1
+            elif rating_int == 4 and summary.four_star > 0: summary.four_star -= 1
+            elif rating_int == 3 and summary.three_star > 0: summary.three_star -= 1
+            elif rating_int == 2 and summary.two_star > 0: summary.two_star -= 1
+            elif rating_int == 1 and summary.one_star > 0: summary.one_star -= 1
+            summary.save()
+        
+        review.delete()
+        messages.success(request, "Review removed. You can now post a new review for this restaurant.")
+        return redirect("profile")
+    
+    return redirect("profile")
 
 
 from django.utils.dateparse import parse_date, parse_time
